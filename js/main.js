@@ -711,26 +711,37 @@ function calculate() {
     
     // === 投资核心指标计算 ===
     
-    // 1. ROI（绝对投资回报率）
-    // ROI = (月PCF × 预计联营期限(月) / 总投资额 - 1) × 100%
-    const totalReturn = pcfMonthly * operatingPeriodMonths; // 总回报（元）
-    const roi = totalInvestmentYuan > 0 ? ((totalReturn / totalInvestmentYuan - 1) * 100) : 0;
-    
-    // 2. IRR（内部回报率）- 使用牛顿迭代法，按月计算
-    // NPV = -总投资额 + Σ(月PCF / (1+月IRR)^t) = 0
-    const irrMonthly = calculateIRR(totalInvestmentYuan, pcfMonthly, operatingPeriodMonths);
-    // 将月IRR转换为年化IRR: (1 + 月IRR)^12 - 1
-    const irrAnnual = ((Math.pow(1 + irrMonthly / 100, 12) - 1) * 100);
-    
-    // 3. YITO公式计算期限T（月）
+    // 计算YITO期限（需要先算，因为ROI依赖它）
     // 月PCF × T = 总投资额 × (1 + 月r × T)
-    // 月PCF × T = 总投资额 + 总投资额 × 月r × T
-    // 月PCF × T - 总投资额 × 月r × T = 总投资额
-    // T × (月PCF - 总投资额 × 月r) = 总投资额
     // T = 总投资额 / (月PCF - 总投资额 × 月r)
     const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0 
         ? totalInvestmentYuan / (pcfMonthly - totalInvestmentYuan * monthlyReturn)
         : 0;
+    
+    // 1. ROI（投资回报倍数）
+    // ROI = (月PCF × YITO期限) / 总投资额
+    const roi = totalInvestmentYuan > 0 ? (pcfMonthly * yitoPeriodMonths) / totalInvestmentYuan : 0;
+    
+    // 2. IRR - 三种分账频率
+    // 2.1 日分账 - 每天分账一次
+    const totalDays = operatingPeriodMonths * 30; // 总天数
+    const irrDaily = calculateIRR(totalInvestmentYuan, pcfDaily, totalDays);
+    // 日利率转年化：(1 + 日利率)^365 - 1
+    const irrDailyAnnual = ((Math.pow(1 + irrDaily / 100, 365) - 1) * 100);
+    
+    // 2.2 周分账 - 每7天分账一次
+    const totalWeeks = Math.floor(totalDays / 7); // 总周数
+    const pcfWeekly = pcfDaily * 7; // 周PCF
+    const irrWeekly = calculateIRR(totalInvestmentYuan, pcfWeekly, totalWeeks);
+    // 周利率转年化：(1 + 周利率)^52 - 1
+    const irrWeeklyAnnual = ((Math.pow(1 + irrWeekly / 100, 52) - 1) * 100);
+    
+    // 2.3 双周分账 - 每14天分账一次
+    const totalBiweeks = Math.floor(totalDays / 14); // 总双周数
+    const pcfBiweekly = pcfDaily * 14; // 双周PCF
+    const irrBiweekly = calculateIRR(totalInvestmentYuan, pcfBiweekly, totalBiweeks);
+    // 双周利率转年化：(1 + 双周利率)^26 - 1
+    const irrBiweeklyAnnual = ((Math.pow(1 + irrBiweekly / 100, 26) - 1) * 100);
     
     // 调试输出
     console.log('=== 滴灌通投资模型 ===');
@@ -749,13 +760,17 @@ function calculate() {
     console.log('- 总投资额:', totalInvestment.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '万元');
     console.log('');
     console.log('第三部分：投资核心指标');
-    console.log('- 预计联营期限:', operatingPeriodMonths, '月');
+    console.log('- 预计联营期限:', operatingPeriodMonths, '月 (', totalDays, '天)');
     console.log('- 预期年收益率:', (annualReturn * 100).toFixed(2), '%');
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
-    console.log('- ROI:', roi.toFixed(2), '%');
-    console.log('- IRR(月):', irrMonthly.toFixed(2), '%');
-    console.log('- IRR(年化):', irrAnnual.toFixed(2), '%');
     console.log('- YITO期限:', yitoPeriodMonths.toFixed(2), '月');
+    console.log('- ROI:', roi.toFixed(2), '倍');
+    console.log('- IRR(日分账-日利率):', irrDaily.toFixed(4), '%');
+    console.log('- IRR(日分账-年化):', irrDailyAnnual.toFixed(2), '%');
+    console.log('- IRR(周分账-周利率):', irrWeekly.toFixed(4), '%');
+    console.log('- IRR(周分账-年化):', irrWeeklyAnnual.toFixed(2), '%');
+    console.log('- IRR(双周分账-双周利率):', irrBiweekly.toFixed(4), '%');
+    console.log('- IRR(双周分账-年化):', irrBiweeklyAnnual.toFixed(2), '%');
     
     // 更新显示（使用千分位格式）
     updateDisplay({
@@ -763,7 +778,9 @@ function calculate() {
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
         totalInvestment2: formatNumberWithDecimals(totalInvestment, 2),
         roiResult: formatNumberWithDecimals(roi, 2),
-        irrResult: formatNumberWithDecimals(irrAnnual, 2),
+        irrDailyResult: formatNumberWithDecimals(irrDailyAnnual, 2),
+        irrWeeklyResult: formatNumberWithDecimals(irrWeeklyAnnual, 2),
+        irrBiweeklyResult: formatNumberWithDecimals(irrBiweeklyAnnual, 2),
         yitoResult: formatNumberWithDecimals(yitoPeriodMonths, 2)
     });
 }
@@ -842,9 +859,19 @@ function updateDisplay(values) {
         roiElement.textContent = values.roiResult;
     }
     
-    const irrElement = document.getElementById('irrResult');
-    if (irrElement) {
-        irrElement.textContent = values.irrResult;
+    const irrDailyElement = document.getElementById('irrDailyResult');
+    if (irrDailyElement) {
+        irrDailyElement.textContent = values.irrDailyResult;
+    }
+    
+    const irrWeeklyElement = document.getElementById('irrWeeklyResult');
+    if (irrWeeklyElement) {
+        irrWeeklyElement.textContent = values.irrWeeklyResult;
+    }
+    
+    const irrBiweeklyElement = document.getElementById('irrBiweeklyResult');
+    if (irrBiweeklyElement) {
+        irrBiweeklyElement.textContent = values.irrBiweeklyResult;
     }
     
     const yitoElement = document.getElementById('yitoResult');

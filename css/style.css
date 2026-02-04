@@ -2544,3 +2544,16 @@ body {
         font-size: 2rem;
     }
 }
+
+/* 4-5个卡片的网格布局 */
+.results-grid-four {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .results-grid-four {
+        grid-template-columns: 1fr;
+    }
+}

@@ -830,30 +830,56 @@
                     </div>
                     
                     <!-- 计算结果 -->
-                    <div class="results-grid-three">
+                    <div class="results-grid-four">
                         <div class="result-card">
                             <div class="result-card-header">
-                                <span class="result-card-label">ROI（绝对投资回报率）</span>
+                                <span class="result-card-label">ROI（投资回报倍数）</span>
                             </div>
                             <div class="result-card-body">
                                 <div class="result-value-large" id="roiResult">0.00</div>
-                                <div class="result-unit-small">%</div>
+                                <div class="result-unit-small">倍</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">ROI = (月PCF × 期限(月) / 总投资额 - 1) × 100%</span>
+                                <span class="result-formula-small">ROI = (月PCF × YITO期限) / 总投资额</span>
                             </div>
                         </div>
                         
                         <div class="result-card">
                             <div class="result-card-header">
-                                <span class="result-card-label">IRR（内部回报率）</span>
+                                <span class="result-card-label">IRR日分账（年化）</span>
                             </div>
                             <div class="result-card-body">
-                                <div class="result-value-large" id="irrResult">0.00</div>
+                                <div class="result-value-large" id="irrDailyResult">0.00</div>
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">使NPV=0的月贴现率（年化显示）</span>
+                                <span class="result-formula-small">每日PCF贴现，NPV=0的日利率年化</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <div class="result-card-header">
+                                <span class="result-card-label">IRR周分账（年化）</span>
+                            </div>
+                            <div class="result-card-body">
+                                <div class="result-value-large" id="irrWeeklyResult">0.00</div>
+                                <div class="result-unit-small">%</div>
+                            </div>
+                            <div class="result-card-footer">
+                                <span class="result-formula-small">每周PCF贴现，NPV=0的周利率年化</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <div class="result-card-header">
+                                <span class="result-card-label">IRR双周分账（年化）</span>
+                            </div>
+                            <div class="result-card-body">
+                                <div class="result-value-large" id="irrBiweeklyResult">0.00</div>
+                                <div class="result-unit-small">%</div>
+                            </div>
+                            <div class="result-card-footer">
+                                <span class="result-formula-small">每两周PCF贴现，NPV=0的双周利率年化</span>
                             </div>
                         </div>
                         
