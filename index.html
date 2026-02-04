@@ -934,6 +934,260 @@
                     </div>
                 </div> -->
             </div>
+
+            <!-- IRR分账频率和日分账计算器 -->
+            <div class="irr-section" style="margin-top: 4rem;">
+                <div class="section-header">
+                    <span class="section-label">IRR DISTRIBUTION · 分账计算器</span>
+                    <h2 class="section-title"><span>IRR</span> <span>分账频率</span> <span>日分账计算</span></h2>
+                    <p class="section-desc">基于实际现金流的内部收益率和每日分账金额计算</p>
+                </div>
+
+                <!-- IRR分账频率选择 -->
+                <div class="model-section">
+                    <h3 class="model-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        分账频率设置
+                    </h3>
+                    <div class="frequency-options" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div class="frequency-card" onclick="setFrequency('daily')" style="padding: 1.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="radio" name="frequency" id="freq-daily" value="daily" checked style="width: 20px; height: 20px;">
+                                <label for="freq-daily" style="cursor: pointer; font-weight: 600; font-size: 1.1rem;">日分账</label>
+                            </div>
+                            <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;">每天结算并分配收益</p>
+                        </div>
+                        <div class="frequency-card" onclick="setFrequency('weekly')" style="padding: 1.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="radio" name="frequency" id="freq-weekly" value="weekly" style="width: 20px; height: 20px;">
+                                <label for="freq-weekly" style="cursor: pointer; font-weight: 600; font-size: 1.1rem;">周分账</label>
+                            </div>
+                            <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;">每周结算一次</p>
+                        </div>
+                        <div class="frequency-card" onclick="setFrequency('monthly')" style="padding: 1.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="radio" name="frequency" id="freq-monthly" value="monthly" style="width: 20px; height: 20px;">
+                                <label for="freq-monthly" style="cursor: pointer; font-weight: 600; font-size: 1.1rem;">月分账</label>
+                            </div>
+                            <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;">每月结算一次</p>
+                        </div>
+                        <div class="frequency-card" onclick="setFrequency('quarterly')" style="padding: 1.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="radio" name="frequency" id="freq-quarterly" value="quarterly" style="width: 20px; height: 20px;">
+                                <label for="freq-quarterly" style="cursor: pointer; font-weight: 600; font-size: 1.1rem;">季分账</label>
+                            </div>
+                            <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;">每季度结算一次</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日分账计算结果 -->
+                <div class="model-section">
+                    <h3 class="model-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        分账金额计算
+                    </h3>
+                    <div class="distribution-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+                        <!-- 日均分账 -->
+                        <div class="distribution-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 1.5rem; color: white; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                                    <path d="M12 2v20M2 12h20"/>
+                                </svg>
+                                <h4 style="font-size: 1rem; font-weight: 600; opacity: 0.9;">日均分账</h4>
+                            </div>
+                            <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" id="dailyDistribution">0</div>
+                            <div style="opacity: 0.9; font-size: 0.9rem;">元/天</div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9;">
+                                    <span>竞盛(30%)</span>
+                                    <span id="dailyDistJingsheng">0元</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9; margin-top: 0.5rem;">
+                                    <span>加盟商(70%)</span>
+                                    <span id="dailyDistFranchisee">0元</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 周均分账 -->
+                        <div class="distribution-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 1.5rem; color: white; box-shadow: 0 10px 30px rgba(240, 147, 251, 0.3);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <h4 style="font-size: 1rem; font-weight: 600; opacity: 0.9;">周均分账</h4>
+                            </div>
+                            <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" id="weeklyDistribution">0</div>
+                            <div style="opacity: 0.9; font-size: 0.9rem;">元/周</div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9;">
+                                    <span>竞盛(30%)</span>
+                                    <span id="weeklyDistJingsheng">0元</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9; margin-top: 0.5rem;">
+                                    <span>加盟商(70%)</span>
+                                    <span id="weeklyDistFranchisee">0元</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 月均分账 -->
+                        <div class="distribution-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 1.5rem; color: white; box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <h4 style="font-size: 1rem; font-weight: 600; opacity: 0.9;">月均分账</h4>
+                            </div>
+                            <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" id="monthlyDistribution">0</div>
+                            <div style="opacity: 0.9; font-size: 0.9rem;">元/月</div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9;">
+                                    <span>竞盛(30%)</span>
+                                    <span id="monthlyDistJingsheng">0元</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9; margin-top: 0.5rem;">
+                                    <span>加盟商(70%)</span>
+                                    <span id="monthlyDistFranchisee">0元</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 季度分账 -->
+                        <div class="distribution-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 2rem; border-radius: 1.5rem; color: white; box-shadow: 0 10px 30px rgba(250, 112, 154, 0.3);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <h4 style="font-size: 1rem; font-weight: 600; opacity: 0.9;">季度分账</h4>
+                            </div>
+                            <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" id="quarterlyDistribution">0</div>
+                            <div style="opacity: 0.9; font-size: 0.9rem;">元/季</div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9;">
+                                    <span>竞盛(30%)</span>
+                                    <span id="quarterlyDistJingsheng">0元</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9; margin-top: 0.5rem;">
+                                    <span>加盟商(70%)</span>
+                                    <span id="quarterlyDistFranchisee">0元</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IRR计算详情 -->
+                <div class="model-section">
+                    <h3 class="model-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                            <polyline points="17 6 23 6 23 12"/>
+                        </svg>
+                        IRR计算逻辑说明
+                    </h3>
+                    <div class="irr-explanation" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 2rem; border-radius: 1.5rem; margin-top: 1.5rem;">
+                        <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: #1f2937;">内部收益率（IRR）计算公式</h4>
+                        <div style="background: white; padding: 1.5rem; border-radius: 1rem; margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                            <code style="font-size: 1rem; color: #6366f1; font-weight: 600;">
+                                NPV = Σ [CF<sub>t</sub> / (1 + IRR)<sup>t</sup>] = 0
+                            </code>
+                            <div style="margin-top: 1rem; color: #6b7280; font-size: 0.9rem;">
+                                其中：CF<sub>t</sub> = 第t期现金流，t = 期数（按分账频率计算）
+                            </div>
+                        </div>
+                        
+                        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: #1f2937;">日分账计算逻辑</h4>
+                        <div style="display: grid; gap: 1rem;">
+                            <div style="background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                                <div style="font-weight: 600; color: #6366f1; margin-bottom: 0.5rem;">1. 日均净营收计算</div>
+                                <code style="color: #374151;">日均净营收 = (年营收 - 年成本) ÷ 365天</code>
+                            </div>
+                            <div style="background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                                <div style="font-weight: 600; color: #6366f1; margin-bottom: 0.5rem;">2. 竞盛日分账</div>
+                                <code style="color: #374151;">竞盛日分账 = 日均净营收 × 30%</code>
+                            </div>
+                            <div style="background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                                <div style="font-weight: 600; color: #6366f1; margin-bottom: 0.5rem;">3. 加盟商日分账</div>
+                                <code style="color: #374151;">加盟商日分账 = 日均净营收 × 70%</code>
+                            </div>
+                            <div style="background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                                <div style="font-weight: 600; color: #6366f1; margin-bottom: 0.5rem;">4. 其他频率计算</div>
+                                <code style="color: #374151;">周分账 = 日分账 × 7 | 月分账 = 日分账 × 30 | 季分账 = 日分账 × 90</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IRR对比不同分账频率的影响 -->
+                <div class="model-section">
+                    <h3 class="model-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                        分账频率对IRR的影响
+                    </h3>
+                    <div class="irr-comparison-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+                        <div class="irr-freq-card" style="background: white; border: 2px solid #e5e7eb; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                            <h4 style="font-size: 1.1rem; font-weight: 700; color: #6366f1; margin-bottom: 1rem;">日分账模式</h4>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;" id="irrDaily">--</div>
+                            <div style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">年化IRR</div>
+                            <div style="padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                <div style="font-size: 0.85rem; color: #6b7280;">现金流频率：365次/年</div>
+                                <div style="font-size: 0.85rem; color: #10b981; font-weight: 600; margin-top: 0.5rem;">✓ 资金周转最快</div>
+                            </div>
+                        </div>
+
+                        <div class="irr-freq-card" style="background: white; border: 2px solid #e5e7eb; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                            <h4 style="font-size: 1.1rem; font-weight: 700; color: #f59e0b; margin-bottom: 1rem;">周分账模式</h4>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;" id="irrWeekly">--</div>
+                            <div style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">年化IRR</div>
+                            <div style="padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                <div style="font-size: 0.85rem; color: #6b7280;">现金流频率：52次/年</div>
+                                <div style="font-size: 0.85rem; color: #10b981; font-weight: 600; margin-top: 0.5rem;">✓ 平衡效率</div>
+                            </div>
+                        </div>
+
+                        <div class="irr-freq-card" style="background: white; border: 2px solid #e5e7eb; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                            <h4 style="font-size: 1.1rem; font-weight: 700; color: #3b82f6; margin-bottom: 1rem;">月分账模式</h4>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;" id="irrMonthly">--</div>
+                            <div style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">年化IRR</div>
+                            <div style="padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                <div style="font-size: 0.85rem; color: #6b7280;">现金流频率：12次/年</div>
+                                <div style="font-size: 0.85rem; color: #6b7280; font-weight: 600; margin-top: 0.5rem;">常规分账模式</div>
+                            </div>
+                        </div>
+
+                        <div class="irr-freq-card" style="background: white; border: 2px solid #e5e7eb; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                            <h4 style="font-size: 1.1rem; font-weight: 700; color: #8b5cf6; margin-bottom: 1rem;">季分账模式</h4>
+                            <div style="font-size: 2rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;" id="irrQuarterly">--</div>
+                            <div style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">年化IRR</div>
+                            <div style="padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                <div style="font-size: 0.85rem; color: #6b7280;">现金流频率：4次/年</div>
+                                <div style="font-size: 0.85rem; color: #ef4444; font-weight: 600; margin-top: 0.5rem;">⚠ 资金占用时间长</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
     </main>

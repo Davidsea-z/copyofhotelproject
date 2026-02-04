@@ -917,4 +917,217 @@ function resetCalculator() {
 // 页面加载时初始化计算
 window.addEventListener('DOMContentLoaded', () => {
     calculate();
+    calculateDistribution(); // 初始化分账计算
+});
+
+// ==========================================
+// IRR 分账频率和日分账计算
+// ==========================================
+
+// 当前选中的分账频率
+let currentFrequency = 'daily';
+
+// 设置分账频率
+function setFrequency(frequency) {
+    currentFrequency = frequency;
+    
+    // 更新UI选中状态
+    document.querySelectorAll('.frequency-card').forEach(card => {
+        card.style.border = '2px solid #e5e7eb';
+        card.style.transform = 'scale(1)';
+    });
+    
+    const selectedCard = document.querySelector(`#freq-${frequency}`).closest('.frequency-card');
+    selectedCard.style.border = '2px solid #6366f1';
+    selectedCard.style.transform = 'scale(1.05)';
+    
+    // 更新单选按钮状态
+    document.querySelectorAll('input[name="frequency"]').forEach(radio => {
+        radio.checked = radio.value === frequency;
+    });
+    
+    // 重新计算分账
+    calculateDistribution();
+}
+
+// 计算分账金额
+function calculateDistribution() {
+    // 基础数据（从现有财务模型中获取）
+    const annualRevenue = 1368700; // 年营收：136.87万元
+    const annualCost = 7000; // 年成本：0.7万元
+    const annualNetRevenue = annualRevenue - annualCost; // 年净营收
+    
+    // 计算日均净营收
+    const dailyNetRevenue = annualNetRevenue / 365;
+    
+    // 分账比例
+    const jingshengRatio = 0.30; // 竞盛30%
+    const franchiseeRatio = 0.70; // 加盟商70%
+    
+    // 计算各频率的分账金额
+    const distributions = {
+        daily: {
+            total: dailyNetRevenue,
+            jingsheng: dailyNetRevenue * jingshengRatio,
+            franchisee: dailyNetRevenue * franchiseeRatio
+        },
+        weekly: {
+            total: dailyNetRevenue * 7,
+            jingsheng: dailyNetRevenue * 7 * jingshengRatio,
+            franchisee: dailyNetRevenue * 7 * franchiseeRatio
+        },
+        monthly: {
+            total: dailyNetRevenue * 30,
+            jingsheng: dailyNetRevenue * 30 * jingshengRatio,
+            franchisee: dailyNetRevenue * 30 * franchiseeRatio
+        },
+        quarterly: {
+            total: dailyNetRevenue * 90,
+            jingsheng: dailyNetRevenue * 90 * jingshengRatio,
+            franchisee: dailyNetRevenue * 90 * franchiseeRatio
+        }
+    };
+    
+    // 更新DOM显示
+    updateDistributionUI(distributions);
+    
+    // 计算不同频率的IRR
+    calculateIRRByFrequency(distributions);
+}
+
+// 更新分账UI显示
+function updateDistributionUI(distributions) {
+    // 日分账
+    document.getElementById('dailyDistribution').textContent = formatNumberWithDecimals(distributions.daily.total, 2);
+    document.getElementById('dailyDistJingsheng').textContent = formatNumberWithDecimals(distributions.daily.jingsheng, 2) + '元';
+    document.getElementById('dailyDistFranchisee').textContent = formatNumberWithDecimals(distributions.daily.franchisee, 2) + '元';
+    
+    // 周分账
+    document.getElementById('weeklyDistribution').textContent = formatNumberWithDecimals(distributions.weekly.total, 2);
+    document.getElementById('weeklyDistJingsheng').textContent = formatNumberWithDecimals(distributions.weekly.jingsheng, 2) + '元';
+    document.getElementById('weeklyDistFranchisee').textContent = formatNumberWithDecimals(distributions.weekly.franchisee, 2) + '元';
+    
+    // 月分账
+    document.getElementById('monthlyDistribution').textContent = formatNumberWithDecimals(distributions.monthly.total, 2);
+    document.getElementById('monthlyDistJingsheng').textContent = formatNumberWithDecimals(distributions.monthly.jingsheng, 2) + '元';
+    document.getElementById('monthlyDistFranchisee').textContent = formatNumberWithDecimals(distributions.monthly.franchisee, 2) + '元';
+    
+    // 季分账
+    document.getElementById('quarterlyDistribution').textContent = formatNumberWithDecimals(distributions.quarterly.total, 2);
+    document.getElementById('quarterlyDistJingsheng').textContent = formatNumberWithDecimals(distributions.quarterly.jingsheng, 2) + '元';
+    document.getElementById('quarterlyDistFranchisee').textContent = formatNumberWithDecimals(distributions.quarterly.franchisee, 2) + '元';
+}
+
+// 计算不同分账频率下的IRR
+function calculateIRRByFrequency(distributions) {
+    const initialInvestment = 506700; // 初始投资：50.67万元
+    
+    // 日分账IRR（竞盛视角，只看30%部分）
+    const dailyCashFlow = distributions.daily.jingsheng;
+    const dailyPeriods = 365 * 5; // 5年，共1825天
+    const irrDaily = calculateIRRForFrequency(initialInvestment, dailyCashFlow, dailyPeriods);
+    
+    // 周分账IRR
+    const weeklyCashFlow = distributions.weekly.jingsheng;
+    const weeklyPeriods = 52 * 5; // 5年，共260周
+    const irrWeekly = calculateIRRForFrequency(initialInvestment, weeklyCashFlow, weeklyPeriods);
+    
+    // 月分账IRR
+    const monthlyCashFlow = distributions.monthly.jingsheng;
+    const monthlyPeriods = 12 * 5; // 5年，共60个月
+    const irrMonthly = calculateIRRForFrequency(initialInvestment, monthlyCashFlow, monthlyPeriods);
+    
+    // 季分账IRR
+    const quarterlyCashFlow = distributions.quarterly.jingsheng;
+    const quarterlyPeriods = 4 * 5; // 5年，共20个季度
+    const irrQuarterly = calculateIRRForFrequency(initialInvestment, quarterlyCashFlow, quarterlyPeriods);
+    
+    // 更新IRR显示
+    document.getElementById('irrDaily').textContent = formatNumberWithDecimals(irrDaily, 2) + '%';
+    document.getElementById('irrWeekly').textContent = formatNumberWithDecimals(irrWeekly, 2) + '%';
+    document.getElementById('irrMonthly').textContent = formatNumberWithDecimals(irrMonthly, 2) + '%';
+    document.getElementById('irrQuarterly').textContent = formatNumberWithDecimals(irrQuarterly, 2) + '%';
+}
+
+// 计算指定频率的IRR（使用牛顿迭代法）
+function calculateIRRForFrequency(initialInvestment, cashFlow, periods) {
+    if (cashFlow <= 0 || periods <= 0) {
+        console.warn('无效的现金流或期数');
+        return 0;
+    }
+    
+    let irr = 0.1; // 初始猜测值 10%
+    const maxIterations = 100;
+    const tolerance = 0.0001;
+    
+    for (let i = 0; i < maxIterations; i++) {
+        let npv = -initialInvestment;
+        let derivative = 0;
+        
+        // 计算NPV和导数
+        for (let t = 1; t <= periods; t++) {
+            const factor = Math.pow(1 + irr, t);
+            npv += cashFlow / factor;
+            derivative -= t * cashFlow / Math.pow(1 + irr, t + 1);
+        }
+        
+        // 检查导数是否太小
+        if (Math.abs(derivative) < 0.000001) {
+            console.warn('IRR计算：导数太小，可能无法收敛');
+            break;
+        }
+        
+        // 牛顿迭代
+        const irrNew = irr - npv / derivative;
+        
+        // 检查收敛
+        if (Math.abs(irrNew - irr) < tolerance) {
+            // 年化IRR（需要根据频率调整）
+            return annualizeIRR(irrNew, periods / 5); // periods/5 = 每年的期数
+        }
+        
+        irr = irrNew;
+        
+        // 防止负值或极端值
+        if (irr < -0.99) irr = -0.99;
+        if (irr > 10) irr = 10;
+    }
+    
+    console.warn('IRR计算：未在最大迭代次数内收敛');
+    return annualizeIRR(irr, periods / 5);
+}
+
+// 将期间IRR年化
+function annualizeIRR(periodIRR, periodsPerYear) {
+    // 年化公式：(1 + 期间IRR)^期数 - 1
+    const annualizedIRR = Math.pow(1 + periodIRR, periodsPerYear) - 1;
+    return annualizedIRR * 100; // 转换为百分比
+}
+
+// 添加悬停效果到分账卡片
+document.addEventListener('DOMContentLoaded', () => {
+    const distributionCards = document.querySelectorAll('.distribution-card');
+    distributionCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px) scale(1.02)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // 为IRR频率卡片添加悬停效果
+    const irrFreqCards = document.querySelectorAll('.irr-freq-card');
+    irrFreqCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.08)';
+        });
+    });
 });
