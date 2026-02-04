@@ -686,9 +686,7 @@ function calculate() {
     
     // 计算 PCF（滴灌通分成预期现金流）- 元/天
     // PCF = 房间数量 × 入住率 × 平均房价 × 分成比例
-    const pcfYuan = roomCount * occupancyRate * avgPrice * profitShareRate;
-    // 转换为万元/天，保留两位小数
-    const pcfWan = pcfYuan / 10000;
+    const pcf = roomCount * occupancyRate * avgPrice * profitShareRate;
     
     // 计算电竞设备平均价格（元/台）
     // 将万元转换为元
@@ -705,17 +703,17 @@ function calculate() {
     console.log('- 入住率:', (occupancyRate * 100).toFixed(2), '%');
     console.log('- 平均房价:', avgPrice, '元/间/天');
     console.log('- 分成比例:', (profitShareRate * 100).toFixed(2), '%');
-    console.log('- PCF:', pcfWan.toFixed(2), '万元/天');
+    console.log('- PCF:', Math.round(pcf).toLocaleString('en-US'), '元/天');
     console.log('');
     console.log('第二部分：设备投资');
     console.log('- 电竞设备数量:', deviceCount, '台');
     console.log('- 电竞设备投入:', equipmentCost, '万元');
-    console.log('- 电竞设备平均价格:', avgEquipmentPrice.toFixed(0), '元/台');
-    console.log('- 总投资额:', totalInvestment, '万元');
+    console.log('- 电竞设备平均价格:', Math.round(avgEquipmentPrice).toLocaleString('en-US'), '元/台');
+    console.log('- 总投资额:', totalInvestment.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '万元');
     
     // 更新显示（使用千分位格式）
     updateDisplay({
-        pcfResult: formatNumberWithDecimals(pcfWan, 2),
+        pcfResult: formatNumber(Math.round(pcf)),
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
         totalInvestment2: formatNumberWithDecimals(totalInvestment, 2)
     });
