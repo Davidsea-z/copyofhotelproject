@@ -1018,90 +1018,139 @@ function updateDistributionUI(distributions) {
     document.getElementById('quarterlyDistFranchisee').textContent = formatNumberWithDecimals(distributions.quarterly.franchisee, 2) + '元';
 }
 
+/**
+ * 计算以天数为单位的现金流IRR（内部收益率），直接返回年化IRR
+ * 解决超大天数（如660天）的数值爆炸/下溢问题，支持任意时间点现金流
+ * @param {number} initialInvestment - 初始投资额（正数，代表现金流出，如10000）
+ * @param {Array<Object>} cashFlowDetails - 现金流详情数组（每笔流入的天数和金额）
+ *                                          格式：[{days: 660, amount: 12000}, {days: 300, amount: 5000}]
+ * @param {number} [maxIterations=1000] - 最大迭代次数（默认1000，足够覆盖绝大多数场景）
+ * @param {number} [tolerance=1e-8] - 收敛容差（差值小于此值即认为收敛，默认1e-8保证精度）
+ * @param {number} [daysPerYear=365] - 一年的计息天数（默认365，可改为360适配金融行业规则）
+ * @returns {number} 年化IRR（保留6位小数，失败返回NaN）
+ */
+function calculateIRRByDays(
+    initialInvestment,
+    cashFlowDetails,
+    maxIterations = 1000,
+    tolerance = 1e-8,
+    daysPerYear = 365
+) {
+    // 第一步：前置参数校验，避免无效计算
+    if (
+        typeof initialInvestment !== 'number' || initialInvestment <= 0 ||
+        !Array.isArray(cashFlowDetails) || cashFlowDetails.length === 0 ||
+        cashFlowDetails.some(item => typeof item.days !== 'number' || item.days <= 0 || typeof item.amount !== 'number' || item.amount <= 0)
+    ) {
+        console.error('参数错误：\n1. 初始投资额必须是大于0的数字\n2. 现金流数组不能为空，且每笔现金流的days/amount必须是大于0的数字');
+        return NaN;
+    }
+
+    // 第二步：预处理现金流——天数转年数，从根源规避超大t值的指数爆炸
+    const cashFlowsWithYears = cashFlowDetails.map(flow => ({
+        years: flow.days / daysPerYear, // 核心：660天 → 660/365 ≈ 1.808年，缩小t量级
+        amount: flow.amount
+    }));
+
+    // 第三步：初始化牛顿迭代参数，选择合理初始值（年化10%，贴近真实投资场景）
+    let irr = 0.1; // 初始值设为0.1（10%），避免与真实解差距过大导致迭代发散
+
+    // 第四步：牛顿-拉夫逊迭代求解IRR
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+        let npv = -initialInvestment; // 净现值初始化：初始投资为现金流出，取负值
+        let derivative = 0; // NPV对irr的一阶导数初始化
+
+        // 遍历所有现金流，计算当前irr对应的NPV和导数
+        for (const flow of cashFlowsWithYears) {
+            const t = flow.years; // 此时t是年数（如1.808），而非原始天数（660）
+            const cashAmount = flow.amount;
+
+            // 优化指数运算：用Math.exp() + Math.log()替代Math.pow()，提升大数/小数运算稳定性
+            const logFactor = Math.log(1 + irr);
+            const factor = Math.exp(t * logFactor); // 等价于Math.pow(1 + irr, t)，更稳定
+            const derivativeFactor = Math.exp((t + 1) * logFactor); // 等价于Math.pow(1 + irr, t+1)
+
+            // 累加计算NPV（净现值）
+            npv += cashAmount / factor;
+
+            // 累加计算导数（NPV对irr的一阶导数）
+            derivative -= (t * cashAmount) / derivativeFactor;
+        }
+
+        // 保护机制：避免导数过小导致除以0，中断迭代
+        if (Math.abs(derivative) < 1e-10) {
+            console.warn('IRR计算警告：导数过小，无法继续迭代（可能无有效正收益解或现金流配置不合理）');
+            break;
+        }
+
+        // 牛顿迭代核心公式：更新irr值
+        const irrNew = irr - npv / derivative;
+
+        // 完善收敛条件：同时验证「irr差值」和「NPV接近0」，保证结果准确性
+        const irrDifference = Math.abs(irrNew - irr);
+        const npvNearZero = Math.abs(npv) < 1e-6;
+        if (irrDifference < tolerance && npvNearZero) {
+            // 返回保留6位小数的年化IRR，提升可读性和实用性
+            return parseFloat(irrNew.toFixed(6));
+        }
+
+        // 边界限制：避免irr出现极端值，防止迭代发散
+        if (irrNew < -0.99) {
+            irr = -0.99; // 下限：-99%年化（避免分母为0）
+        } else if (irrNew > 10) {
+            irr = 10; // 上限：1000%年化（覆盖绝大多数超高收益场景）
+        } else {
+            irr = irrNew;
+        }
+    }
+
+    // 迭代未收敛：返回当前最优值（保留6位小数），并给出警告
+    console.warn('IRR计算警告：未在最大迭代次数内完全收敛，返回当前最优年化IRR');
+    return parseFloat(irr.toFixed(6));
+}
+
 // 计算不同分账频率下的IRR
 function calculateIRRByFrequency(distributions) {
     const initialInvestment = 506700; // 初始投资：50.67万元
+    const investmentYears = 5; // 投资周期：5年
     
-    // 日分账IRR（竞盛视角，只看30%部分）
+    // 日分账IRR - 构建每日现金流
     const dailyCashFlow = distributions.daily.jingsheng;
-    const dailyPeriods = 365 * 5; // 5年，共1825天
-    const irrDaily = calculateIRRForFrequency(initialInvestment, dailyCashFlow, dailyPeriods);
+    const dailyCashFlows = [];
+    for (let day = 1; day <= 365 * investmentYears; day++) {
+        dailyCashFlows.push({ days: day, amount: dailyCashFlow });
+    }
+    const irrDaily = calculateIRRByDays(initialInvestment, dailyCashFlows);
     
-    // 周分账IRR
+    // 周分账IRR - 构建每周现金流
     const weeklyCashFlow = distributions.weekly.jingsheng;
-    const weeklyPeriods = 52 * 5; // 5年，共260周
-    const irrWeekly = calculateIRRForFrequency(initialInvestment, weeklyCashFlow, weeklyPeriods);
+    const weeklyCashFlows = [];
+    for (let week = 1; week <= 52 * investmentYears; week++) {
+        weeklyCashFlows.push({ days: week * 7, amount: weeklyCashFlow });
+    }
+    const irrWeekly = calculateIRRByDays(initialInvestment, weeklyCashFlows);
     
-    // 月分账IRR
+    // 月分账IRR - 构建每月现金流
     const monthlyCashFlow = distributions.monthly.jingsheng;
-    const monthlyPeriods = 12 * 5; // 5年，共60个月
-    const irrMonthly = calculateIRRForFrequency(initialInvestment, monthlyCashFlow, monthlyPeriods);
+    const monthlyCashFlows = [];
+    for (let month = 1; month <= 12 * investmentYears; month++) {
+        monthlyCashFlows.push({ days: month * 30, amount: monthlyCashFlow });
+    }
+    const irrMonthly = calculateIRRByDays(initialInvestment, monthlyCashFlows);
     
-    // 季分账IRR
+    // 季分账IRR - 构建每季现金流
     const quarterlyCashFlow = distributions.quarterly.jingsheng;
-    const quarterlyPeriods = 4 * 5; // 5年，共20个季度
-    const irrQuarterly = calculateIRRForFrequency(initialInvestment, quarterlyCashFlow, quarterlyPeriods);
-    
-    // 更新IRR显示
-    document.getElementById('irrDaily').textContent = formatNumberWithDecimals(irrDaily, 2) + '%';
-    document.getElementById('irrWeekly').textContent = formatNumberWithDecimals(irrWeekly, 2) + '%';
-    document.getElementById('irrMonthly').textContent = formatNumberWithDecimals(irrMonthly, 2) + '%';
-    document.getElementById('irrQuarterly').textContent = formatNumberWithDecimals(irrQuarterly, 2) + '%';
-}
-
-// 计算指定频率的IRR（使用牛顿迭代法）
-function calculateIRRForFrequency(initialInvestment, cashFlow, periods) {
-    if (cashFlow <= 0 || periods <= 0) {
-        console.warn('无效的现金流或期数');
-        return 0;
+    const quarterlyCashFlows = [];
+    for (let quarter = 1; quarter <= 4 * investmentYears; quarter++) {
+        quarterlyCashFlows.push({ days: quarter * 90, amount: quarterlyCashFlow });
     }
+    const irrQuarterly = calculateIRRByDays(initialInvestment, quarterlyCashFlows);
     
-    let irr = 0.1; // 初始猜测值 10%
-    const maxIterations = 100;
-    const tolerance = 0.0001;
-    
-    for (let i = 0; i < maxIterations; i++) {
-        let npv = -initialInvestment;
-        let derivative = 0;
-        
-        // 计算NPV和导数
-        for (let t = 1; t <= periods; t++) {
-            const factor = Math.pow(1 + irr, t);
-            npv += cashFlow / factor;
-            derivative -= t * cashFlow / Math.pow(1 + irr, t + 1);
-        }
-        
-        // 检查导数是否太小
-        if (Math.abs(derivative) < 0.000001) {
-            console.warn('IRR计算：导数太小，可能无法收敛');
-            break;
-        }
-        
-        // 牛顿迭代
-        const irrNew = irr - npv / derivative;
-        
-        // 检查收敛
-        if (Math.abs(irrNew - irr) < tolerance) {
-            // 年化IRR（需要根据频率调整）
-            return annualizeIRR(irrNew, periods / 5); // periods/5 = 每年的期数
-        }
-        
-        irr = irrNew;
-        
-        // 防止负值或极端值
-        if (irr < -0.99) irr = -0.99;
-        if (irr > 10) irr = 10;
-    }
-    
-    console.warn('IRR计算：未在最大迭代次数内收敛');
-    return annualizeIRR(irr, periods / 5);
-}
-
-// 将期间IRR年化
-function annualizeIRR(periodIRR, periodsPerYear) {
-    // 年化公式：(1 + 期间IRR)^期数 - 1
-    const annualizedIRR = Math.pow(1 + periodIRR, periodsPerYear) - 1;
-    return annualizedIRR * 100; // 转换为百分比
+    // 更新IRR显示（转换为百分比）
+    document.getElementById('irrDaily').textContent = !isNaN(irrDaily) ? formatNumberWithDecimals(irrDaily * 100, 2) + '%' : '--';
+    document.getElementById('irrWeekly').textContent = !isNaN(irrWeekly) ? formatNumberWithDecimals(irrWeekly * 100, 2) + '%' : '--';
+    document.getElementById('irrMonthly').textContent = !isNaN(irrMonthly) ? formatNumberWithDecimals(irrMonthly * 100, 2) + '%' : '--';
+    document.getElementById('irrQuarterly').textContent = !isNaN(irrQuarterly) ? formatNumberWithDecimals(irrQuarterly * 100, 2) + '%' : '--';
 }
 
 // 添加悬停效果到分账卡片
