@@ -820,10 +820,6 @@
                     <!-- 输入参数 -->
                     <div class="calc-inputs-inline">
                         <div class="calc-input-group">
-                            <label for="operatingPeriod">预计联营期限（月）</label>
-                            <input type="number" id="operatingPeriod" value="60" min="1" max="360" step="1" oninput="calculate()">
-                        </div>
-                        <div class="calc-input-group">
                             <label for="expectedReturn">预期年收益率 r（%）</label>
                             <input type="number" id="expectedReturn" value="18" min="0" max="100" step="1" oninput="calculate()">
                         </div>
@@ -831,6 +827,19 @@
                     
                     <!-- 计算结果 -->
                     <div class="results-grid-four">
+                        <div class="result-card highlight-card">
+                            <div class="result-card-header">
+                                <span class="result-card-label">YITO期限（按18%年收益率）</span>
+                            </div>
+                            <div class="result-card-body">
+                                <div class="result-value-large" id="yitoResult">0.00</div>
+                                <div class="result-unit-small">月</div>
+                            </div>
+                            <div class="result-card-footer">
+                                <span class="result-formula-small">月PCF × T = 总投资额 × (1 + 月r × T)</span>
+                            </div>
+                        </div>
+                        
                         <div class="result-card">
                             <div class="result-card-header">
                                 <span class="result-card-label">ROI（投资回报倍数）</span>
@@ -853,7 +862,7 @@
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">每日PCF贴现，NPV=0的日利率年化</span>
+                                <span class="result-formula-small">每日PCF贴现至YITO期限，NPV=0的日利率年化</span>
                             </div>
                         </div>
                         
@@ -866,7 +875,7 @@
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">每周PCF贴现，NPV=0的周利率年化</span>
+                                <span class="result-formula-small">每周PCF贴现至YITO期限，NPV=0的周利率年化</span>
                             </div>
                         </div>
                         
@@ -879,20 +888,7 @@
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">每两周PCF贴现，NPV=0的双周利率年化</span>
-                            </div>
-                        </div>
-                        
-                        <div class="result-card">
-                            <div class="result-card-header">
-                                <span class="result-card-label">YITO期限（按18%年收益率）</span>
-                            </div>
-                            <div class="result-card-body">
-                                <div class="result-value-large" id="yitoResult">0.00</div>
-                                <div class="result-unit-small">月</div>
-                            </div>
-                            <div class="result-card-footer">
-                                <span class="result-formula-small">月PCF × T = 总投资额 × (1 + 月r × T)</span>
+                                <span class="result-formula-small">每两周PCF贴现至YITO期限，NPV=0的双周利率年化</span>
                             </div>
                         </div>
                     </div>

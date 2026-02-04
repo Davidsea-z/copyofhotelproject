@@ -670,7 +670,6 @@ const defaultValues = {
     profitShareRate: 30,
     deviceCount: 28,
     equipmentCost: 35.64,
-    operatingPeriod: 60,
     expectedReturn: 18
 };
 
@@ -687,7 +686,6 @@ function calculate() {
     const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value || 0); // 万元
     
     // 第三部分：投资核心指标参数
-    const operatingPeriodMonths = parseFloat(document.getElementById('operatingPeriod')?.value || 60);
     const annualReturn = parseFloat(document.getElementById('expectedReturn')?.value || 18) / 100;
     
     // 计算月收益率（从年收益率转换）
@@ -711,32 +709,33 @@ function calculate() {
     
     // === 投资核心指标计算 ===
     
-    // 计算YITO期限（需要先算，因为ROI依赖它）
+    // 1. 计算YITO期限（需要先算，因为ROI和IRR都依赖它）
     // 月PCF × T = 总投资额 × (1 + 月r × T)
     // T = 总投资额 / (月PCF - 总投资额 × 月r)
     const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0 
         ? totalInvestmentYuan / (pcfMonthly - totalInvestmentYuan * monthlyReturn)
         : 0;
     
-    // 1. ROI（投资回报倍数）
+    // 2. ROI（投资回报倍数）
     // ROI = (月PCF × YITO期限) / 总投资额
     const roi = totalInvestmentYuan > 0 ? (pcfMonthly * yitoPeriodMonths) / totalInvestmentYuan : 0;
     
-    // 2. IRR - 三种分账频率
-    // 2.1 日分账 - 每天分账一次
-    const totalDays = operatingPeriodMonths * 30; // 总天数
+    // 3. IRR - 三种分账频率（都基于YITO期限）
+    const totalDays = yitoPeriodMonths * 30; // YITO期限的总天数
+    
+    // 3.1 日分账 - 每天分账一次
     const irrDaily = calculateIRR(totalInvestmentYuan, pcfDaily, totalDays);
     // 日利率转年化：(1 + 日利率)^365 - 1
     const irrDailyAnnual = ((Math.pow(1 + irrDaily / 100, 365) - 1) * 100);
     
-    // 2.2 周分账 - 每7天分账一次
+    // 3.2 周分账 - 每7天分账一次
     const totalWeeks = Math.floor(totalDays / 7); // 总周数
     const pcfWeekly = pcfDaily * 7; // 周PCF
     const irrWeekly = calculateIRR(totalInvestmentYuan, pcfWeekly, totalWeeks);
     // 周利率转年化：(1 + 周利率)^52 - 1
     const irrWeeklyAnnual = ((Math.pow(1 + irrWeekly / 100, 52) - 1) * 100);
     
-    // 2.3 双周分账 - 每14天分账一次
+    // 3.3 双周分账 - 每14天分账一次
     const totalBiweeks = Math.floor(totalDays / 14); // 总双周数
     const pcfBiweekly = pcfDaily * 14; // 双周PCF
     const irrBiweekly = calculateIRR(totalInvestmentYuan, pcfBiweekly, totalBiweeks);
@@ -760,10 +759,9 @@ function calculate() {
     console.log('- 总投资额:', totalInvestment.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '万元');
     console.log('');
     console.log('第三部分：投资核心指标');
-    console.log('- 预计联营期限:', operatingPeriodMonths, '月 (', totalDays, '天)');
     console.log('- 预期年收益率:', (annualReturn * 100).toFixed(2), '%');
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
-    console.log('- YITO期限:', yitoPeriodMonths.toFixed(2), '月');
+    console.log('- YITO期限:', yitoPeriodMonths.toFixed(2), '月 (', totalDays.toFixed(0), '天)');
     console.log('- ROI:', roi.toFixed(2), '倍');
     console.log('- IRR(日分账-日利率):', irrDaily.toFixed(4), '%');
     console.log('- IRR(日分账-年化):', irrDailyAnnual.toFixed(2), '%');
