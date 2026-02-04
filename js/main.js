@@ -682,39 +682,46 @@ function calculate() {
     
     // 第二部分：设备投资
     const deviceCount = parseFloat(document.getElementById('deviceCount')?.value || 0);
-    const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value || 0); // 已经是万元
+    const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value || 0); // 万元
     
     // 计算 PCF（滴灌通分成预期现金流）- 元/天
     // PCF = 房间数量 × 入住率 × 平均房价 × 分成比例
     const pcf = roomCount * occupancyRate * avgPrice * profitShareRate;
     
-    // 计算电竞设备平均价格（万元/台）
-    const avgEquipmentPrice = deviceCount > 0 ? equipmentCost / deviceCount : 0;
+    // 计算电竞设备平均价格（元/台）
+    // 将万元转换为元
+    const equipmentCostYuan = equipmentCost * 10000;
+    const avgEquipmentPrice = deviceCount > 0 ? equipmentCostYuan / deviceCount : 0;
     
     // 计算总投资额（万元）
     const totalInvestment = equipmentCost;
     
     // 调试输出
     console.log('=== 滴灌通投资模型 ===');
-    console.log('第一部分：核心输入');
+    console.log('第一部分：核心输入估计PCF');
     console.log('- 房间数量:', roomCount, '间');
     console.log('- 入住率:', (occupancyRate * 100).toFixed(2), '%');
     console.log('- 平均房价:', avgPrice, '元/间/天');
     console.log('- 分成比例:', (profitShareRate * 100).toFixed(2), '%');
-    console.log('- PCF:', pcf.toFixed(2), '元/天');
+    console.log('- PCF:', pcf.toFixed(0), '元/天');
     console.log('');
     console.log('第二部分：设备投资');
     console.log('- 电竞设备数量:', deviceCount, '台');
     console.log('- 电竞设备投入:', equipmentCost, '万元');
-    console.log('- 电竞设备平均价格:', avgEquipmentPrice.toFixed(4), '万元/台');
+    console.log('- 电竞设备平均价格:', avgEquipmentPrice.toFixed(0), '元/台');
     console.log('- 总投资额:', totalInvestment, '万元');
     
-    // 更新显示
+    // 更新显示（使用千分位格式）
     updateDisplay({
-        pcfResult: pcf.toFixed(2),
-        avgEquipmentPrice: avgEquipmentPrice.toFixed(4),
-        totalInvestment2: totalInvestment.toFixed(2)
+        pcfResult: formatNumber(Math.round(pcf)),
+        avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
+        totalInvestment2: formatNumber(totalInvestment)
     });
+}
+
+// 格式化数字，添加千分位
+function formatNumber(num) {
+    return num.toLocaleString('en-US');
 }
 
 // 更新显示
