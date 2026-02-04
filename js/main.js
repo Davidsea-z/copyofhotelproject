@@ -687,6 +687,7 @@ function calculate() {
     
     // 第三部分：投资核心指标参数
     const annualReturn = parseFloat(document.getElementById('expectedReturn')?.value || 18) / 100;
+    const irrFrequency = document.getElementById('irrFrequency')?.value || 'daily';
     
     // 计算月收益率（从年收益率转换）
     const monthlyReturn = annualReturn / 12;
@@ -720,27 +721,36 @@ function calculate() {
     // ROI = (月PCF × YITO期限) / 总投资额
     const roi = totalInvestmentYuan > 0 ? (pcfMonthly * yitoPeriodMonths) / totalInvestmentYuan : 0;
     
-    // 3. IRR - 三种分账频率（都基于YITO期限）
+    // 3. IRR - 根据选择的分账频率计算
     const totalDays = yitoPeriodMonths * 30; // YITO期限的总天数
     
-    // 3.1 日分账 - 每天分账一次
-    const irrDaily = calculateIRR(totalInvestmentYuan, pcfDaily, totalDays);
-    // 日利率转年化：(1 + 日利率)^365 - 1
-    const irrDailyAnnual = ((Math.pow(1 + irrDaily / 100, 365) - 1) * 100);
+    let irrValue = 0;
+    let irrLabel = '';
+    let irrFormula = '';
     
-    // 3.2 周分账 - 每7天分账一次
-    const totalWeeks = Math.floor(totalDays / 7); // 总周数
-    const pcfWeekly = pcfDaily * 7; // 周PCF
-    const irrWeekly = calculateIRR(totalInvestmentYuan, pcfWeekly, totalWeeks);
-    // 周利率转年化：(1 + 周利率)^52 - 1
-    const irrWeeklyAnnual = ((Math.pow(1 + irrWeekly / 100, 52) - 1) * 100);
-    
-    // 3.3 双周分账 - 每14天分账一次
-    const totalBiweeks = Math.floor(totalDays / 14); // 总双周数
-    const pcfBiweekly = pcfDaily * 14; // 双周PCF
-    const irrBiweekly = calculateIRR(totalInvestmentYuan, pcfBiweekly, totalBiweeks);
-    // 双周利率转年化：(1 + 双周利率)^26 - 1
-    const irrBiweeklyAnnual = ((Math.pow(1 + irrBiweekly / 100, 26) - 1) * 100);
+    if (irrFrequency === 'daily') {
+        // 日分账
+        const irrDaily = calculateIRR(totalInvestmentYuan, pcfDaily, totalDays);
+        irrValue = ((Math.pow(1 + irrDaily / 100, 365) - 1) * 100);
+        irrLabel = 'IRR日分账（年化）';
+        irrFormula = '每日PCF贴现至YITO期限，NPV=0的日利率年化';
+    } else if (irrFrequency === 'weekly') {
+        // 周分账
+        const totalWeeks = Math.floor(totalDays / 7);
+        const pcfWeekly = pcfDaily * 7;
+        const irrWeekly = calculateIRR(totalInvestmentYuan, pcfWeekly, totalWeeks);
+        irrValue = ((Math.pow(1 + irrWeekly / 100, 52) - 1) * 100);
+        irrLabel = 'IRR周分账（年化）';
+        irrFormula = '每周PCF贴现至YITO期限，NPV=0的周利率年化';
+    } else if (irrFrequency === 'biweekly') {
+        // 双周分账
+        const totalBiweeks = Math.floor(totalDays / 14);
+        const pcfBiweekly = pcfDaily * 14;
+        const irrBiweekly = calculateIRR(totalInvestmentYuan, pcfBiweekly, totalBiweeks);
+        irrValue = ((Math.pow(1 + irrBiweekly / 100, 26) - 1) * 100);
+        irrLabel = 'IRR双周分账（年化）';
+        irrFormula = '每两周PCF贴现至YITO期限，NPV=0的双周利率年化';
+    }
     
     // 调试输出
     console.log('=== 滴灌通投资模型 ===');
@@ -763,12 +773,8 @@ function calculate() {
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
     console.log('- YITO期限:', yitoPeriodMonths.toFixed(2), '月 (', totalDays.toFixed(0), '天)');
     console.log('- ROI:', roi.toFixed(2), '倍');
-    console.log('- IRR(日分账-日利率):', irrDaily.toFixed(4), '%');
-    console.log('- IRR(日分账-年化):', irrDailyAnnual.toFixed(2), '%');
-    console.log('- IRR(周分账-周利率):', irrWeekly.toFixed(4), '%');
-    console.log('- IRR(周分账-年化):', irrWeeklyAnnual.toFixed(2), '%');
-    console.log('- IRR(双周分账-双周利率):', irrBiweekly.toFixed(4), '%');
-    console.log('- IRR(双周分账-年化):', irrBiweeklyAnnual.toFixed(2), '%');
+    console.log('- IRR分账频率:', irrFrequency);
+    console.log('- IRR(年化):', irrValue.toFixed(2), '%');
     
     // 更新显示（使用千分位格式）
     updateDisplay({
@@ -776,15 +782,20 @@ function calculate() {
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
         totalInvestment2: formatNumberWithDecimals(totalInvestment, 2),
         roiResult: formatNumberWithDecimals(roi, 2),
-        irrDailyResult: formatNumberWithDecimals(irrDailyAnnual, 2),
-        irrWeeklyResult: formatNumberWithDecimals(irrWeeklyAnnual, 2),
-        irrBiweeklyResult: formatNumberWithDecimals(irrBiweeklyAnnual, 2),
+        irrResult: formatNumberWithDecimals(irrValue, 2),
+        irrLabel: irrLabel,
+        irrFormula: irrFormula,
         yitoResult: formatNumberWithDecimals(yitoPeriodMonths, 2)
     });
 }
 
 // 计算IRR（内部回报率）使用牛顿迭代法
-function calculateIRR(initialInvestment, annualCashFlow, periods) {
+function calculateIRR(initialInvestment, cashFlow, periods) {
+    // 边界检查
+    if (initialInvestment <= 0 || cashFlow <= 0 || periods <= 0) {
+        return 0;
+    }
+    
     // 初始猜测值
     let irr = 0.1; // 10%
     const maxIterations = 100;
@@ -797,8 +808,14 @@ function calculateIRR(initialInvestment, annualCashFlow, periods) {
         // 计算NPV和导数
         for (let t = 1; t <= periods; t++) {
             const factor = Math.pow(1 + irr, t);
-            npv += annualCashFlow / factor;
-            derivative -= t * annualCashFlow / Math.pow(1 + irr, t + 1);
+            npv += cashFlow / factor;
+            derivative -= t * cashFlow / Math.pow(1 + irr, t + 1);
+        }
+        
+        // 检查导数是否太小
+        if (Math.abs(derivative) < 0.000001) {
+            console.warn('IRR计算：导数太小，可能无法收敛');
+            break;
         }
         
         // 牛顿迭代
@@ -816,6 +833,7 @@ function calculateIRR(initialInvestment, annualCashFlow, periods) {
         if (irr > 10) irr = 10;
     }
     
+    console.warn('IRR计算：未在最大迭代次数内收敛，返回当前值');
     return irr * 100; // 转换为百分比
 }
 
@@ -857,19 +875,19 @@ function updateDisplay(values) {
         roiElement.textContent = values.roiResult;
     }
     
-    const irrDailyElement = document.getElementById('irrDailyResult');
-    if (irrDailyElement) {
-        irrDailyElement.textContent = values.irrDailyResult;
+    const irrElement = document.getElementById('irrResult');
+    if (irrElement) {
+        irrElement.textContent = values.irrResult;
     }
     
-    const irrWeeklyElement = document.getElementById('irrWeeklyResult');
-    if (irrWeeklyElement) {
-        irrWeeklyElement.textContent = values.irrWeeklyResult;
+    const irrLabelElement = document.getElementById('irrLabel');
+    if (irrLabelElement) {
+        irrLabelElement.textContent = values.irrLabel;
     }
     
-    const irrBiweeklyElement = document.getElementById('irrBiweeklyResult');
-    if (irrBiweeklyElement) {
-        irrBiweeklyElement.textContent = values.irrBiweeklyResult;
+    const irrFormulaElement = document.getElementById('irrFormula');
+    if (irrFormulaElement) {
+        irrFormulaElement.textContent = values.irrFormula;
     }
     
     const yitoElement = document.getElementById('yitoResult');

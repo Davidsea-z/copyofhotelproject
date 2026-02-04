@@ -823,10 +823,18 @@
                             <label for="expectedReturn">预期年收益率 r（%）</label>
                             <input type="number" id="expectedReturn" value="18" min="0" max="100" step="1" oninput="calculate()">
                         </div>
+                        <div class="calc-input-group">
+                            <label for="irrFrequency">IRR分账频率</label>
+                            <select id="irrFrequency" onchange="calculate()">
+                                <option value="daily">日分账</option>
+                                <option value="weekly">周分账</option>
+                                <option value="biweekly">双周分账</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <!-- 计算结果 -->
-                    <div class="results-grid-four">
+                    <div class="results-grid-three">
                         <div class="result-card highlight-card">
                             <div class="result-card-header">
                                 <span class="result-card-label">YITO期限（按18%年收益率）</span>
@@ -855,40 +863,14 @@
                         
                         <div class="result-card">
                             <div class="result-card-header">
-                                <span class="result-card-label">IRR日分账（年化）</span>
+                                <span class="result-card-label" id="irrLabel">IRR（年化）</span>
                             </div>
                             <div class="result-card-body">
-                                <div class="result-value-large" id="irrDailyResult">0.00</div>
+                                <div class="result-value-large" id="irrResult">0.00</div>
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">每日PCF贴现至YITO期限，NPV=0的日利率年化</span>
-                            </div>
-                        </div>
-                        
-                        <div class="result-card">
-                            <div class="result-card-header">
-                                <span class="result-card-label">IRR周分账（年化）</span>
-                            </div>
-                            <div class="result-card-body">
-                                <div class="result-value-large" id="irrWeeklyResult">0.00</div>
-                                <div class="result-unit-small">%</div>
-                            </div>
-                            <div class="result-card-footer">
-                                <span class="result-formula-small">每周PCF贴现至YITO期限，NPV=0的周利率年化</span>
-                            </div>
-                        </div>
-                        
-                        <div class="result-card">
-                            <div class="result-card-header">
-                                <span class="result-card-label">IRR双周分账（年化）</span>
-                            </div>
-                            <div class="result-card-body">
-                                <div class="result-value-large" id="irrBiweeklyResult">0.00</div>
-                                <div class="result-unit-small">%</div>
-                            </div>
-                            <div class="result-card-footer">
-                                <span class="result-formula-small">每两周PCF贴现至YITO期限，NPV=0的双周利率年化</span>
+                                <span class="result-formula-small" id="irrFormula">NPV=0的贴现率年化</span>
                             </div>
                         </div>
                     </div>
