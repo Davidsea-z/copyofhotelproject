@@ -703,7 +703,7 @@ function calculate() {
     console.log('- 入住率:', (occupancyRate * 100).toFixed(2), '%');
     console.log('- 平均房价:', avgPrice, '元/间/天');
     console.log('- 分成比例:', (profitShareRate * 100).toFixed(2), '%');
-    console.log('- PCF:', Math.round(pcf).toLocaleString('en-US'), '元/天');
+    console.log('- PCF:', pcf.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元/天');
     console.log('');
     console.log('第二部分：设备投资');
     console.log('- 电竞设备数量:', deviceCount, '台');
@@ -713,7 +713,7 @@ function calculate() {
     
     // 更新显示（使用千分位格式）
     updateDisplay({
-        pcfResult: formatNumber(Math.round(pcf)),
+        pcfResult: formatNumberWithDecimals(pcf, 2),
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
         totalInvestment2: formatNumberWithDecimals(totalInvestment, 2)
     });
