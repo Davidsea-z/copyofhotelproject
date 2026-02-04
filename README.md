@@ -3,11 +3,11 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**基于2025年最新数据 · 顶级设计系统 · 交互式可视化**
+**基于2025年最新数据 · 顶级设计系统 · 交互式可视化 · IRR分账计算器**
 
 [在线演示 (GitHub)](https://davidsea-z.github.io/copyofhotelproject) · [在线演示 (Cloudflare)](https://gamehotelmodel.pages.dev) · [快速部署](#-快速部署) · [报告问题](https://github.com/Davidsea-z/copyofhotelproject/issues)
 
@@ -56,6 +56,8 @@
 - **实时动画**：数字递增、卡片悬停、平滑滚动
 - **交互式图表**：悬停显示详细数据
 - **自动计算**：投资占比自动统计
+- **IRR分账计算器**：日/周/月/季分账频率对比（v2.1新增）
+- **实时IRR分析**：不同分账频率的年化收益率对比（v2.1新增）
 
 ### 📱 响应式设计
 - **多设备适配**：桌面、平板、手机完美呈现
@@ -376,6 +378,19 @@ const chartData = {
 ---
 
 ## 📝 更新日志
+
+### v2.1 (2026-02-04) - IRR分账计算器 🎯
+- ✨ **新增IRR分账频率选择器**：支持日/周/月/季四种分账模式
+- 💰 **实时分账金额计算**：自动计算不同频率下的分账金额
+- 📊 **IRR对比分析**：展示不同分账频率的年化内部收益率
+- 🎨 **渐变色卡片设计**：四种分账模式使用不同渐变配色
+- 🧮 **计算逻辑说明**：详细展示NPV公式和日分账计算步骤
+- 📈 **分账比例展示**：竞盛30% vs 加盟商70%清晰对比
+- ⚡ **交互式悬停效果**：卡片悬停放大和高亮显示
+- 🔢 **牛顿迭代法**：精确计算不同频率下的IRR
+- 📱 **响应式设计**：完美适配各种设备屏幕
+
+详细功能说明：查看 [IRR_DISTRIBUTION_FEATURE.md](IRR_DISTRIBUTION_FEATURE.md)
 
 ### v2.0 (2026-01-30) - 现代化重构 🎉
 - ✨ 全新现代化设计系统
