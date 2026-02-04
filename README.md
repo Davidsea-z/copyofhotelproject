@@ -9,7 +9,7 @@
 
 **基于2025年最新数据 · 顶级设计系统 · 交互式可视化**
 
-[在线演示](https://davidsea-z.github.io/copyofhotelproject) · [快速部署](#-快速部署) · [报告问题](https://github.com/Davidsea-z/copyofhotelproject/issues)
+[在线演示 (GitHub)](https://davidsea-z.github.io/copyofhotelproject) · [在线演示 (Cloudflare)](https://gamehotelmodel.pages.dev) · [快速部署](#-快速部署) · [报告问题](https://github.com/Davidsea-z/copyofhotelproject/issues)
 
 </div>
 
