@@ -686,7 +686,9 @@ function calculate() {
     
     // 计算 PCF（滴灌通分成预期现金流）- 元/天
     // PCF = 房间数量 × 入住率 × 平均房价 × 分成比例
-    const pcf = roomCount * occupancyRate * avgPrice * profitShareRate;
+    const pcfYuan = roomCount * occupancyRate * avgPrice * profitShareRate;
+    // 转换为万元/天，保留两位小数
+    const pcfWan = pcfYuan / 10000;
     
     // 计算电竞设备平均价格（元/台）
     // 将万元转换为元
@@ -703,7 +705,7 @@ function calculate() {
     console.log('- 入住率:', (occupancyRate * 100).toFixed(2), '%');
     console.log('- 平均房价:', avgPrice, '元/间/天');
     console.log('- 分成比例:', (profitShareRate * 100).toFixed(2), '%');
-    console.log('- PCF:', pcf.toFixed(0), '元/天');
+    console.log('- PCF:', pcfWan.toFixed(2), '万元/天');
     console.log('');
     console.log('第二部分：设备投资');
     console.log('- 电竞设备数量:', deviceCount, '台');
@@ -713,15 +715,23 @@ function calculate() {
     
     // 更新显示（使用千分位格式）
     updateDisplay({
-        pcfResult: formatNumber(Math.round(pcf)),
+        pcfResult: formatNumberWithDecimals(pcfWan, 2),
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
-        totalInvestment2: formatNumber(totalInvestment)
+        totalInvestment2: formatNumberWithDecimals(totalInvestment, 2)
     });
 }
 
-// 格式化数字，添加千分位
+// 格式化数字，添加千分位（整数）
 function formatNumber(num) {
     return num.toLocaleString('en-US');
+}
+
+// 格式化数字，添加千分位和指定小数位数
+function formatNumberWithDecimals(num, decimals) {
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
 }
 
 // 更新显示
