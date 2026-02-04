@@ -2345,3 +2345,77 @@ body {
     will-change: transform;
     transform: translateZ(0);
 }
+/* ==========================================
+   滴灌通投资模型 - 结果高亮显示
+   ========================================== */
+.calc-result-highlight {
+    margin-top: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+    border-radius: 1rem;
+    border: 2px solid rgba(99, 102, 241, 0.2);
+}
+
+.result-item-large {
+    margin-bottom: 1.5rem;
+}
+
+.result-item-large:last-child {
+    margin-bottom: 0;
+}
+
+.result-item-large .result-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-600);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.result-value-container {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.result-value-container .result-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.result-value-container .result-value.highlight {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.result-value-container .result-unit {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+}
+
+.result-formula {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .calc-result-highlight {
+        padding: 1.5rem;
+    }
+    
+    .result-value-container .result-value {
+        font-size: 2rem;
+    }
+}

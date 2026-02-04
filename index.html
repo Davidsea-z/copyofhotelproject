@@ -736,17 +736,13 @@
                 </div>
 
                 <div class="calculator-grid">
-                    <!-- 酒店基本参数 -->
+                    <!-- 第一部分：核心输入 -->
                     <div class="calc-category">
-                        <h4 class="calc-category-title">酒店基本参数</h4>
+                        <h4 class="calc-category-title">第一部分：核心输入</h4>
                         <div class="calc-inputs">
                             <div class="calc-input-group">
                                 <label for="roomCount">房间数量（间）</label>
                                 <input type="number" id="roomCount" value="16" min="1" max="100" oninput="calculate()">
-                            </div>
-                            <div class="calc-input-group">
-                                <label for="deviceCount">电竞设备数量（台）</label>
-                                <input type="number" id="deviceCount" value="28" min="1" max="200" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
                                 <label for="occupancyRate">入住率（%）</label>
@@ -757,52 +753,62 @@
                                 <input type="number" id="avgPrice" value="280" min="50" max="1000" step="10" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
-                                <label for="commissionRate">OTA佣金率（%）</label>
-                                <input type="number" id="commissionRate" value="10" min="0" max="30" step="1" oninput="calculate()">
-                            </div>
-                            <div class="calc-input-group">
-                                <label for="profitShareRate">滴灌通分成比例（%）</label>
+                                <label for="profitShareRate">分成比例（%）</label>
                                 <input type="number" id="profitShareRate" value="30" min="0" max="100" step="1" oninput="calculate()">
-                                <span class="input-hint">滴灌通从营收中的分成（加盟商获得剩下的部分）</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 滴灌通分成预期现金流 PCF 计算结果 -->
+                        <div class="calc-result-highlight">
+                            <div class="result-item-large">
+                                <span class="result-label">滴灌通分成预期现金流 PCF</span>
+                                <div class="result-value-container">
+                                    <span class="result-value highlight" id="pcfResult">0</span>
+                                    <span class="result-unit">元/天</span>
+                                </div>
+                                <span class="result-formula">PCF = 房间数量 × 入住率 × 平均房价 × 分成比例</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 投资成本 -->
+                    <!-- 第二部分：设备投资 -->
                     <div class="calc-category">
-                        <h4 class="calc-category-title">滴灌通投资成本（元）</h4>
+                        <h4 class="calc-category-title">第二部分：设备投资</h4>
                         <div class="calc-inputs">
                             <div class="calc-input-group">
-                                <label for="renovationCost">装修投入</label>
-                                <input type="number" id="renovationCost" value="58800" min="0" step="1000" oninput="calculate()">
-                                <span class="input-hint">由加盟商酒店承担</span>
+                                <label for="deviceCount">电竞设备数量（台）</label>
+                                <input type="number" id="deviceCount" value="28" min="1" max="200" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
-                                <label for="equipmentCost">电竞设备投入</label>
-                                <input type="number" id="equipmentCost" value="356400" min="0" step="1000" oninput="calculate()">
-                                <span class="input-hint">强力监管</span>
+                                <label for="equipmentCost">电竞设备投入（万元）</label>
+                                <input type="number" id="equipmentCost" value="35.64" min="0" step="0.1" oninput="calculate()">
                             </div>
-                            <div class="calc-input-group">
-                                <label for="franchiseCost">加盟成本</label>
-                                <input type="number" id="franchiseCost" value="88000" min="0" step="1000" oninput="calculate()">
-                                <span class="input-hint">加盟酒店方的成本</span>
+                        </div>
+                        
+                        <!-- 计算结果展示 -->
+                        <div class="calc-result-highlight">
+                            <div class="result-item-large">
+                                <span class="result-label">电竞设备平均价格</span>
+                                <div class="result-value-container">
+                                    <span class="result-value" id="avgEquipmentPrice">0</span>
+                                    <span class="result-unit">万元/台</span>
+                                </div>
+                                <span class="result-formula">平均价格 = 电竞设备投入 ÷ 电竞设备数量</span>
                             </div>
-                            <div class="calc-input-group">
-                                <label for="otherCost">其他费用</label>
-                                <input type="number" id="otherCost" value="3500" min="0" step="500" oninput="calculate()">
-                                <span class="input-hint">包含OTA拍摄登费用</span>
-                            </div>
-                            <div class="calc-input-group">
-                                <label for="annualOperatingCost">滴灌通年经营成本</label>
-                                <input type="number" id="annualOperatingCost" value="0" min="0" step="1000" oninput="calculate()">
-                                <span class="input-hint">滴灌通经营成本</span>
+                            <div class="result-item-large">
+                                <span class="result-label">总投资额</span>
+                                <div class="result-value-container">
+                                    <span class="result-value highlight" id="totalInvestment2">0</span>
+                                    <span class="result-unit">万元</span>
+                                </div>
+                                <span class="result-formula">总投资额 = 电竞设备投入</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 计算结果展示 -->
-                <div class="calc-results">
+                <!-- 计算结果展示 - 待更新 -->
+                <!-- <div class="calc-results" style="display:none;">
                     <h4 class="calc-results-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
@@ -857,7 +863,7 @@
                             <span class="result-unit">个月</span>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
     </section>

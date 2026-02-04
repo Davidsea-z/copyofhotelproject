@@ -662,121 +662,79 @@ console.log('%c电竞酒店可行性研究报告 %c已加载完成 ✓',
 // 财务计算器功能
 // ==========================================
 
-// 默认值（根据原始财务模型）
+// 默认值（滴灌通投资模型）
 const defaultValues = {
     roomCount: 16,
-    deviceCount: 28,
     occupancyRate: 93,
     avgPrice: 280,
-    commissionRate: 10,
     profitShareRate: 30,
-    renovationCost: 58800,
-    equipmentCost: 356400,
-    franchiseCost: 88000,
-    otherCost: 3500,
-    annualOperatingCost: 0
+    deviceCount: 28,
+    equipmentCost: 35.64
 };
 
 // 计算财务指标
 function calculate() {
-    // 获取输入值
+    // 第一部分：核心输入
     const roomCount = parseFloat(document.getElementById('roomCount')?.value || 0);
-    const deviceCount = parseFloat(document.getElementById('deviceCount')?.value || 0);
     const occupancyRate = parseFloat(document.getElementById('occupancyRate')?.value || 0) / 100;
     const avgPrice = parseFloat(document.getElementById('avgPrice')?.value || 0);
-    const commissionRate = parseFloat(document.getElementById('commissionRate')?.value || 0) / 100;
     const profitShareRate = parseFloat(document.getElementById('profitShareRate')?.value || 0) / 100;
     
-    const renovationCost = parseFloat(document.getElementById('renovationCost')?.value || 0);
-    const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value || 0);
-    const franchiseCost = parseFloat(document.getElementById('franchiseCost')?.value || 0);
-    const otherCost = parseFloat(document.getElementById('otherCost')?.value || 0);
-    const annualOperatingCost = parseFloat(document.getElementById('annualOperatingCost')?.value || 0);
+    // 第二部分：设备投资
+    const deviceCount = parseFloat(document.getElementById('deviceCount')?.value || 0);
+    const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value || 0); // 已经是万元
     
-    // 根据竞盛品牌方视角计算
-    // 商业模式：竞盛投资设备，获得30%营收分成；加盟商酒店投资装修，获得70%营收分成
+    // 计算 PCF（滴灌通分成预期现金流）- 元/天
+    // PCF = 房间数量 × 入住率 × 平均房价 × 分成比例
+    const pcf = roomCount * occupancyRate * avgPrice * profitShareRate;
     
-    // 1. RevPAR（每间房每天实际收入）
-    const revPAR = avgPrice * occupancyRate; // 260.4元
+    // 计算电竞设备平均价格（万元/台）
+    const avgEquipmentPrice = deviceCount > 0 ? equipmentCost / deviceCount : 0;
     
-    // 2. RevPAR（扣除OTA佣金）
-    const revPARAfterOTA = revPAR * (1 - commissionRate); // 234.36元
-    
-    // 3. 年营收（扣除OTA后）= RevPAR(扣OTA) × 房间数 × 365天
-    const annualRevenueAfterOTA = revPARAfterOTA * roomCount * 365; // 1,368,662元
-    
-    // 4. 日/月营收（显示用，基于原价）
-    const dailyRevenue = roomCount * avgPrice * occupancyRate;
-    const monthlyRevenue = dailyRevenue * 30;
-    const yearlyRevenueGross = dailyRevenue * 365;
-    
-    // 5. 竞盛年收入 = 年营收 × 竞盛分成比例（30%）
-    const jingShengIncome = annualRevenueAfterOTA * profitShareRate; // 410,599元
-    
-    // 6. 加盟商年收入 = 年营收 × (1 - 竞盛分成比例) = 70%
-    const franchiseeIncome = annualRevenueAfterOTA * (1 - profitShareRate); // 958,063元
-    
-    // 7. 竞盛年净利润 = 竞盛年收入 - 竞盛年经营成本
-    const jingShengProfit = jingShengIncome - annualOperatingCost; // 403,599元
-    
-    // 8. 竞盛月净利润
-    const monthlyProfit = jingShengProfit / 12; // 33,633元
-    
-    // 9. 竞盛总投资（主要是电竞设备+加盟成本）
-    const totalInvestment = renovationCost + equipmentCost + franchiseCost + otherCost; // 506,700元
-    
-    // 10. 竞盛回本周期（月）
-    const paybackPeriod = totalInvestment / monthlyProfit; // 15.07个月
-    
-    // 11. 竞盛投资回报率
-    const roi = (jingShengProfit / totalInvestment) * 100;
+    // 计算总投资额（万元）
+    const totalInvestment = equipmentCost;
     
     // 调试输出
-    console.log('=== 竞盛品牌方财务计算 ===');
-    console.log('1. RevPAR:', revPAR.toFixed(2), '元');
-    console.log('2. RevPAR(扣OTA):', revPARAfterOTA.toFixed(2), '元');
-    console.log('3. 年营收(扣OTA):', annualRevenueAfterOTA.toFixed(2), '元');
-    console.log('4. 竞盛收入(30%):', jingShengIncome.toFixed(2), '元');
-    console.log('5. 加盟商收入(70%):', franchiseeIncome.toFixed(2), '元');
-    console.log('6. 竞盛经营成本:', annualOperatingCost, '元');
-    console.log('7. 竞盛年利润:', jingShengProfit.toFixed(2), '元');
-    console.log('8. 竞盛月利润:', monthlyProfit.toFixed(2), '元');
-    console.log('9. 竞盛总投资:', totalInvestment, '元');
-    console.log('10. 竞盛回本周期:', paybackPeriod.toFixed(2), '个月');
-    console.log('11. 竞盛ROI:', roi.toFixed(2), '%');
+    console.log('=== 滴灌通投资模型 ===');
+    console.log('第一部分：核心输入');
+    console.log('- 房间数量:', roomCount, '间');
+    console.log('- 入住率:', (occupancyRate * 100).toFixed(2), '%');
+    console.log('- 平均房价:', avgPrice, '元/间/天');
+    console.log('- 分成比例:', (profitShareRate * 100).toFixed(2), '%');
+    console.log('- PCF:', pcf.toFixed(2), '元/天');
+    console.log('');
+    console.log('第二部分：设备投资');
+    console.log('- 电竞设备数量:', deviceCount, '台');
+    console.log('- 电竞设备投入:', equipmentCost, '万元');
+    console.log('- 电竞设备平均价格:', avgEquipmentPrice.toFixed(4), '万元/台');
+    console.log('- 总投资额:', totalInvestment, '万元');
     
     // 更新显示
     updateDisplay({
-        dailyRevenue: dailyRevenue.toFixed(0),
-        monthlyRevenue: Math.round(monthlyRevenue).toLocaleString('en-US'),
-        yearlyRevenue: (yearlyRevenueGross / 10000).toFixed(2),
-        profitShare: (jingShengIncome / 10000).toFixed(2),
-        franchiseeIncome: (franchiseeIncome / 10000).toFixed(2),
-        netProfit: (jingShengProfit / 10000).toFixed(2),
-        totalInvestment: (totalInvestment / 10000).toFixed(2),
-        paybackPeriod: paybackPeriod.toFixed(2),
-        roi: roi.toFixed(2)
+        pcfResult: pcf.toFixed(2),
+        avgEquipmentPrice: avgEquipmentPrice.toFixed(4),
+        totalInvestment2: totalInvestment.toFixed(2)
     });
 }
 
 // 更新显示
 function updateDisplay(values) {
-    // 更新详细结果
-    document.getElementById('dailyRevenue').textContent = values.dailyRevenue;
-    document.getElementById('monthlyRevenue').textContent = values.monthlyRevenue;
-    document.getElementById('yearlyRevenue').textContent = values.yearlyRevenue;
-    document.getElementById('profitShare').textContent = values.profitShare;
-    document.getElementById('franchiseeIncome').textContent = values.franchiseeIncome;
-    document.getElementById('netProfit').textContent = values.netProfit;
-    document.getElementById('totalInvest').textContent = values.totalInvestment;
-    document.getElementById('paybackMonths').textContent = values.paybackPeriod;
-    document.getElementById('roi').textContent = values.roi;
+    // 更新第一部分计算结果
+    const pcfElement = document.getElementById('pcfResult');
+    if (pcfElement) {
+        pcfElement.textContent = values.pcfResult;
+    }
     
-    // 更新顶部关键指标
-    document.getElementById('paybackPeriod').textContent = values.paybackPeriod;
-    document.getElementById('totalInvestment').textContent = values.totalInvestment;
-    document.getElementById('annualRevenue').textContent = values.yearlyRevenue;
-    document.getElementById('annualProfit').textContent = values.netProfit;
+    // 更新第二部分计算结果
+    const avgPriceElement = document.getElementById('avgEquipmentPrice');
+    if (avgPriceElement) {
+        avgPriceElement.textContent = values.avgEquipmentPrice;
+    }
+    
+    const totalInvElement = document.getElementById('totalInvestment2');
+    if (totalInvElement) {
+        totalInvElement.textContent = values.totalInvestment2;
+    }
 }
 
 // 重置为默认值
