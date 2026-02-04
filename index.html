@@ -820,11 +820,11 @@
                     <!-- 输入参数 -->
                     <div class="calc-inputs-inline">
                         <div class="calc-input-group">
-                            <label for="operatingPeriod">预计联营期限（年）</label>
-                            <input type="number" id="operatingPeriod" value="5" min="1" max="30" step="0.5" oninput="calculate()">
+                            <label for="operatingPeriod">预计联营期限（月）</label>
+                            <input type="number" id="operatingPeriod" value="60" min="1" max="360" step="1" oninput="calculate()">
                         </div>
                         <div class="calc-input-group">
-                            <label for="expectedReturn">预期收益率 r（%）</label>
+                            <label for="expectedReturn">预期年收益率 r（%）</label>
                             <input type="number" id="expectedReturn" value="18" min="0" max="100" step="1" oninput="calculate()">
                         </div>
                     </div>
@@ -840,7 +840,7 @@
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">ROI = (PCF × 365 × 期限 / 总投资额 - 1) × 100%</span>
+                                <span class="result-formula-small">ROI = (月PCF × 期限(月) / 总投资额 - 1) × 100%</span>
                             </div>
                         </div>
                         
@@ -853,20 +853,20 @@
                                 <div class="result-unit-small">%</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">使NPV=0的贴现率</span>
+                                <span class="result-formula-small">使NPV=0的月贴现率（年化显示）</span>
                             </div>
                         </div>
                         
                         <div class="result-card">
                             <div class="result-card-header">
-                                <span class="result-card-label">YITO期限（按18%收益率）</span>
+                                <span class="result-card-label">YITO期限（按18%年收益率）</span>
                             </div>
                             <div class="result-card-body">
                                 <div class="result-value-large" id="yitoResult">0.00</div>
-                                <div class="result-unit-small">年</div>
+                                <div class="result-unit-small">月</div>
                             </div>
                             <div class="result-card-footer">
-                                <span class="result-formula-small">年PCF × T = 总投资额 × (1 + r × T)</span>
+                                <span class="result-formula-small">月PCF × T = 总投资额 × (1 + 月r × T)</span>
                             </div>
                         </div>
                     </div>

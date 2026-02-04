@@ -670,7 +670,7 @@ const defaultValues = {
     profitShareRate: 30,
     deviceCount: 28,
     equipmentCost: 35.64,
-    operatingPeriod: 5,
+    operatingPeriod: 60,
     expectedReturn: 18
 };
 
@@ -687,12 +687,18 @@ function calculate() {
     const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value || 0); // 万元
     
     // 第三部分：投资核心指标参数
-    const operatingPeriod = parseFloat(document.getElementById('operatingPeriod')?.value || 5);
-    const expectedReturn = parseFloat(document.getElementById('expectedReturn')?.value || 18) / 100;
+    const operatingPeriodMonths = parseFloat(document.getElementById('operatingPeriod')?.value || 60);
+    const annualReturn = parseFloat(document.getElementById('expectedReturn')?.value || 18) / 100;
+    
+    // 计算月收益率（从年收益率转换）
+    const monthlyReturn = annualReturn / 12;
     
     // 计算 PCF（滴灌通分成预期现金流）- 元/天
     // PCF = 房间数量 × 入住率 × 平均房价 × 分成比例
-    const pcf = roomCount * occupancyRate * avgPrice * profitShareRate;
+    const pcfDaily = roomCount * occupancyRate * avgPrice * profitShareRate;
+    
+    // 计算月PCF（元/月）
+    const pcfMonthly = pcfDaily * 30;
     
     // 计算电竞设备平均价格（元/台）
     // 将万元转换为元
@@ -706,23 +712,24 @@ function calculate() {
     // === 投资核心指标计算 ===
     
     // 1. ROI（绝对投资回报率）
-    // ROI = (PCF × 365天 × 预计联营期限 / 总投资额 - 1) × 100%
-    const annualPCF = pcf * 365; // 年度PCF（元）
-    const totalReturn = annualPCF * operatingPeriod; // 总回报（元）
+    // ROI = (月PCF × 预计联营期限(月) / 总投资额 - 1) × 100%
+    const totalReturn = pcfMonthly * operatingPeriodMonths; // 总回报（元）
     const roi = totalInvestmentYuan > 0 ? ((totalReturn / totalInvestmentYuan - 1) * 100) : 0;
     
-    // 2. IRR（内部回报率）- 使用牛顿迭代法
-    // NPV = -总投资额 + Σ(年度PCF / (1+IRR)^t) = 0
-    const irr = calculateIRR(totalInvestmentYuan, annualPCF, operatingPeriod);
+    // 2. IRR（内部回报率）- 使用牛顿迭代法，按月计算
+    // NPV = -总投资额 + Σ(月PCF / (1+月IRR)^t) = 0
+    const irrMonthly = calculateIRR(totalInvestmentYuan, pcfMonthly, operatingPeriodMonths);
+    // 将月IRR转换为年化IRR: (1 + 月IRR)^12 - 1
+    const irrAnnual = ((Math.pow(1 + irrMonthly / 100, 12) - 1) * 100);
     
-    // 3. YITO公式计算期限T
-    // 年度PCF × T = 总投资额 × (1 + r × T)
-    // 年度PCF × T = 总投资额 + 总投资额 × r × T
-    // 年度PCF × T - 总投资额 × r × T = 总投资额
-    // T × (年度PCF - 总投资额 × r) = 总投资额
-    // T = 总投资额 / (年度PCF - 总投资额 × r)
-    const yitoPeriod = (annualPCF - totalInvestmentYuan * expectedReturn) > 0 
-        ? totalInvestmentYuan / (annualPCF - totalInvestmentYuan * expectedReturn)
+    // 3. YITO公式计算期限T（月）
+    // 月PCF × T = 总投资额 × (1 + 月r × T)
+    // 月PCF × T = 总投资额 + 总投资额 × 月r × T
+    // 月PCF × T - 总投资额 × 月r × T = 总投资额
+    // T × (月PCF - 总投资额 × 月r) = 总投资额
+    // T = 总投资额 / (月PCF - 总投资额 × 月r)
+    const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0 
+        ? totalInvestmentYuan / (pcfMonthly - totalInvestmentYuan * monthlyReturn)
         : 0;
     
     // 调试输出
@@ -732,7 +739,8 @@ function calculate() {
     console.log('- 入住率:', (occupancyRate * 100).toFixed(2), '%');
     console.log('- 平均房价:', avgPrice, '元/间/天');
     console.log('- 分成比例:', (profitShareRate * 100).toFixed(2), '%');
-    console.log('- PCF:', pcf.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元/天');
+    console.log('- PCF(日):', pcfDaily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元/天');
+    console.log('- PCF(月):', pcfMonthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元/月');
     console.log('');
     console.log('第二部分：设备投资');
     console.log('- 电竞设备数量:', deviceCount, '台');
@@ -741,21 +749,22 @@ function calculate() {
     console.log('- 总投资额:', totalInvestment.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '万元');
     console.log('');
     console.log('第三部分：投资核心指标');
-    console.log('- 预计联营期限:', operatingPeriod, '年');
-    console.log('- 预期收益率:', (expectedReturn * 100).toFixed(2), '%');
-    console.log('- 年度PCF:', annualPCF.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元');
+    console.log('- 预计联营期限:', operatingPeriodMonths, '月');
+    console.log('- 预期年收益率:', (annualReturn * 100).toFixed(2), '%');
+    console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
     console.log('- ROI:', roi.toFixed(2), '%');
-    console.log('- IRR:', irr.toFixed(2), '%');
-    console.log('- YITO期限:', yitoPeriod.toFixed(2), '年');
+    console.log('- IRR(月):', irrMonthly.toFixed(2), '%');
+    console.log('- IRR(年化):', irrAnnual.toFixed(2), '%');
+    console.log('- YITO期限:', yitoPeriodMonths.toFixed(2), '月');
     
     // 更新显示（使用千分位格式）
     updateDisplay({
-        pcfResult: formatNumberWithDecimals(pcf, 2),
+        pcfResult: formatNumberWithDecimals(pcfDaily, 2),
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
         totalInvestment2: formatNumberWithDecimals(totalInvestment, 2),
         roiResult: formatNumberWithDecimals(roi, 2),
-        irrResult: formatNumberWithDecimals(irr, 2),
-        yitoResult: formatNumberWithDecimals(yitoPeriod, 2)
+        irrResult: formatNumberWithDecimals(irrAnnual, 2),
+        yitoResult: formatNumberWithDecimals(yitoPeriodMonths, 2)
     });
 }
 
