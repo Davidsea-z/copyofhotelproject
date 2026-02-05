@@ -917,11 +917,103 @@ function resetCalculator() {
 // 页面加载时初始化计算
 window.addEventListener('DOMContentLoaded', () => {
     calculate();
-    calculateDistribution(); // 初始化分账计算
-});
-
     calculateDailyIRR(); // 计算日分账IRR并显示在关键指标卡片
 });
+
+// ==========================================
+// IRR计算核心函数
+// ==========================================
+
+/**
+ * 计算以天数为单位的现金流IRR（内部收益率），直接返回年化IRR
+ * 解决超大天数（如660天）的数值爆炸/下溢问题，支持任意时间点现金流
+ * @param {number} initialInvestment - 初始投资额（正数，代表现金流出，如10000）
+ * @param {Array<Object>} cashFlowDetails - 现金流详情数组（每笔流入的天数和金额）
+ *                                          格式：[{days: 660, amount: 12000}, {days: 300, amount: 5000}]
+ * @param {number} [maxIterations=1000] - 最大迭代次数（默认1000，足够覆盖绝大多数场景）
+ * @param {number} [tolerance=1e-8] - 收敛容差（差值小于此值即认为收敛，默认1e-8保证精度）
+ * @param {number} [daysPerYear=365] - 一年的计息天数（默认365，可改为360适配金融行业规则）
+ * @returns {number} 年化IRR（保留6位小数，失败返回NaN）
+ */
+function calculateIRRByDays(
+    initialInvestment,
+    cashFlowDetails,
+    maxIterations = 1000,
+    tolerance = 1e-8,
+    daysPerYear = 365
+) {
+    // 第一步：前置参数校验，避免无效计算
+    if (
+        typeof initialInvestment !== 'number' || initialInvestment <= 0 ||
+        !Array.isArray(cashFlowDetails) || cashFlowDetails.length === 0 ||
+        cashFlowDetails.some(item => typeof item.days !== 'number' || item.days <= 0 || typeof item.amount !== 'number' || item.amount <= 0)
+    ) {
+        console.error('参数错误：\n1. 初始投资额必须是大于0的数字\n2. 现金流数组不能为空，且每笔现金流的days/amount必须是大于0的数字');
+        return NaN;
+    }
+
+    // 第二步：预处理现金流——天数转年数，从根源规避超大t值的指数爆炸
+    const cashFlowsWithYears = cashFlowDetails.map(flow => ({
+        years: flow.days / daysPerYear, // 核心：660天 → 660/365 ≈ 1.808年，缩小t量级
+        amount: flow.amount
+    }));
+
+    // 第三步：初始化牛顿迭代参数，选择合理初始值（年化10%，贴近真实投资场景）
+    let irr = 0.1; // 初始值设为0.1（10%），避免与真实解差距过大导致迭代发散
+
+    // 第四步：牛顿-拉夫逊迭代求解IRR
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+        let npv = -initialInvestment; // 净现值初始化：初始投资为现金流出，取负值
+        let derivative = 0; // NPV对irr的一阶导数初始化
+
+        // 遍历所有现金流，计算当前irr对应的NPV和导数
+        for (const flow of cashFlowsWithYears) {
+            const t = flow.years; // 此时t是年数（如1.808），而非原始天数（660）
+            const cashAmount = flow.amount;
+
+            // 优化指数运算：用Math.exp() + Math.log()替代Math.pow()，提升大数/小数运算稳定性
+            const logFactor = Math.log(1 + irr);
+            const factor = Math.exp(t * logFactor); // 等价于Math.pow(1 + irr, t)，更稳定
+            const derivativeFactor = Math.exp((t + 1) * logFactor); // 等价于Math.pow(1 + irr, t+1)
+
+            // 累加计算NPV（净现值）
+            npv += cashAmount / factor;
+
+            // 累加计算导数（NPV对irr的一阶导数）
+            derivative -= (t * cashAmount) / derivativeFactor;
+        }
+
+        // 保护机制：避免导数过小导致除以0，中断迭代
+        if (Math.abs(derivative) < 1e-10) {
+            console.warn('IRR计算警告：导数过小，无法继续迭代（可能无有效正收益解或现金流配置不合理）');
+            break;
+        }
+
+        // 牛顿迭代核心公式：更新irr值
+        const irrNew = irr - npv / derivative;
+
+        // 完善收敛条件：同时验证「irr差值」和「NPV接近0」，保证结果准确性
+        const irrDifference = Math.abs(irrNew - irr);
+        const npvNearZero = Math.abs(npv) < 1e-6;
+        if (irrDifference < tolerance && npvNearZero) {
+            // 返回保留6位小数的年化IRR，提升可读性和实用性
+            return parseFloat(irrNew.toFixed(6));
+        }
+
+        // 边界限制：避免irr出现极端值，防止迭代发散
+        if (irrNew < -0.99) {
+            irr = -0.99; // 下限：-99%年化（避免分母为0）
+        } else if (irrNew > 10) {
+            irr = 10; // 上限：1000%年化（覆盖绝大多数超高收益场景）
+        } else {
+            irr = irrNew;
+        }
+    }
+
+    // 迭代未收敛：返回当前最优值（保留6位小数），并给出警告
+    console.warn('IRR计算警告：未在最大迭代次数内完全收敛，返回当前最优年化IRR');
+    return parseFloat(irr.toFixed(6));
+}
 
 // ==========================================
 // 日分账IRR计算（显示在关键指标卡片中）
