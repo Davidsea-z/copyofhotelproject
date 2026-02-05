@@ -1035,23 +1035,46 @@ function calculateDailyIRR() {
     const jingshengRatio = 0.30;
     const dailyCashFlow = dailyNetRevenue * jingshengRatio;
     
+    console.log('[IRR计算] 基础数据:', {
+        initialInvestment,
+        annualRevenue,
+        annualCost,
+        annualNetRevenue,
+        dailyNetRevenue: dailyNetRevenue.toFixed(2),
+        dailyCashFlow: dailyCashFlow.toFixed(2)
+    });
+    
     // 构建日分账现金流数组
     const dailyCashFlows = [];
     for (let day = 1; day <= 365 * investmentYears; day++) {
         dailyCashFlows.push({ days: day, amount: dailyCashFlow });
     }
     
+    console.log('[IRR计算] 现金流数组长度:', dailyCashFlows.length);
+    console.log('[IRR计算] 第一个现金流:', dailyCashFlows[0]);
+    console.log('[IRR计算] 最后一个现金流:', dailyCashFlows[dailyCashFlows.length - 1]);
+    
     // 计算IRR
     const irrDaily = calculateIRRByDays(initialInvestment, dailyCashFlows);
     
+    console.log('[IRR计算] IRR结果:', irrDaily);
+    console.log('[IRR计算] 是否为NaN:', isNaN(irrDaily));
+    console.log('[IRR计算] IRR百分比:', !isNaN(irrDaily) ? (irrDaily * 100).toFixed(2) + '%' : 'NaN');
+    
     // 更新显示到关键指标卡片
     const dailyIRRElement = document.getElementById('dailyIRR');
+    console.log('[IRR计算] DOM元素:', dailyIRRElement);
+    
     if (dailyIRRElement) {
         if (!isNaN(irrDaily)) {
-            dailyIRRElement.textContent = formatNumberWithDecimals(irrDaily * 100, 2);
+            const displayValue = formatNumberWithDecimals(irrDaily * 100, 2);
+            console.log('[IRR计算] 显示值:', displayValue);
+            dailyIRRElement.textContent = displayValue;
         } else {
             dailyIRRElement.textContent = '--';
-            console.error('IRR计算失败');
+            console.error('[IRR计算] IRR计算失败，结果为NaN');
         }
+    } else {
+        console.error('[IRR计算] 找不到dailyIRR元素');
     }
 }
