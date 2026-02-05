@@ -1044,18 +1044,22 @@ function calculateDailyIRR() {
         dailyCashFlow: dailyCashFlow.toFixed(2)
     });
     
-    // 构建日分账现金流数组
-    const dailyCashFlows = [];
-    for (let day = 1; day <= 365 * investmentYears; day++) {
-        dailyCashFlows.push({ days: day, amount: dailyCashFlow });
+    // 优化：使用周度采样来近似日分账IRR，减少计算量
+    // 每周累计7天的现金流，这样只需要260个点而不是1825个点
+    const weeklyCashFlow = dailyCashFlow * 7;
+    const weeklyCashFlows = [];
+    for (let week = 1; week <= 52 * investmentYears; week++) {
+        weeklyCashFlows.push({ days: week * 7, amount: weeklyCashFlow });
     }
     
-    console.log('[IRR计算] 现金流数组长度:', dailyCashFlows.length);
-    console.log('[IRR计算] 第一个现金流:', dailyCashFlows[0]);
-    console.log('[IRR计算] 最后一个现金流:', dailyCashFlows[dailyCashFlows.length - 1]);
+    console.log('[IRR计算] 使用周度采样优化');
+    console.log('[IRR计算] 周现金流:', weeklyCashFlow.toFixed(2));
+    console.log('[IRR计算] 现金流数组长度:', weeklyCashFlows.length);
+    console.log('[IRR计算] 第一个现金流:', weeklyCashFlows[0]);
+    console.log('[IRR计算] 最后一个现金流:', weeklyCashFlows[weeklyCashFlows.length - 1]);
     
     // 计算IRR
-    const irrDaily = calculateIRRByDays(initialInvestment, dailyCashFlows);
+    const irrDaily = calculateIRRByDays(initialInvestment, weeklyCashFlows);
     
     console.log('[IRR计算] IRR结果:', irrDaily);
     console.log('[IRR计算] 是否为NaN:', isNaN(irrDaily));
