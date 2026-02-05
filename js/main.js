@@ -77,14 +77,17 @@ if (backToTopBtn) {
     });
 }
 
-// 平滑滚动
+// 平滑滚动（用视口坐标计算，避免嵌套导致 offsetTop 不准）
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
+        const selector = this.getAttribute('href');
+        if (selector === '#') return;
+        const target = document.querySelector(selector);
         if (target) {
             const navHeight = 80;
-            const targetPosition = target.offsetTop - navHeight;
+            const top = target.getBoundingClientRect().top + window.pageYOffset;
+            const targetPosition = top - navHeight;
             window.scrollTo({
                 top: targetPosition,
                 behavior: 'smooth'
@@ -664,12 +667,12 @@ console.log('%c电竞酒店可行性研究报告 %c已加载完成 ✓',
 
 // 默认值（滴灌通投资模型）
 const defaultValues = {
-    roomCount: 16,
-    occupancyRate: 93,
-    avgPrice: 280,
-    profitShareRate: 30,
-    deviceCount: 28,
-    equipmentCost: 35.64,
+    roomCount: 100,
+    occupancyRate: 100,
+    avgPrice: 200,
+    profitShareRate: 10,
+    deviceCount: 100,
+    equipmentCost: 100,
     expectedReturn: 18
 };
 
@@ -721,35 +724,41 @@ function calculate() {
     // ROI = (月PCF × YITO期限) / 总投资额
     const roi = totalInvestmentYuan > 0 ? (pcfMonthly * yitoPeriodMonths) / totalInvestmentYuan : 0;
     
-    // 3. IRR - 根据选择的分账频率计算
-    const totalDays = yitoPeriodMonths * 30; // YITO期限的总天数
+    // 3. IRR - 根据选择的分账频率计算（年限 = 联营期限 YITO，由模型推导，非固定值）
+    const yitoPeriodDays = Math.round(yitoPeriodMonths * 30); // 联营期限总天数
     
     let irrValue = 0;
     let irrLabel = '';
     let irrFormula = '';
     
+    // 日/周/双周分账统一：均用 calculateIRRByDays（按年贴现），避免 (1+r)^期数 指数爆炸
+    const cashFlows =
+        irrFrequency === 'daily' || irrFrequency === 'weekly'
+            ? buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily)
+            : buildYitoBiweeklyCashFlows(yitoPeriodDays, pcfDaily);
+    const irrAnnualDecimal = cashFlows.length > 0
+        ? calculateIRRByDays(totalInvestmentYuan, cashFlows)
+        : NaN;
+    irrValue = (typeof irrAnnualDecimal === 'number' && !isNaN(irrAnnualDecimal)) ? irrAnnualDecimal * 100 : 0;
     if (irrFrequency === 'daily') {
-        // 日分账
-        const irrDaily = calculateIRR(totalInvestmentYuan, pcfDaily, totalDays);
-        irrValue = ((Math.pow(1 + irrDaily / 100, 365) - 1) * 100);
         irrLabel = 'IRR日分账（年化）';
-        irrFormula = '每日PCF贴现至YITO期限，NPV=0的日利率年化';
+        irrFormula = '每日PCF贴现至YITO联营期限，NPV=0的年化IRR';
     } else if (irrFrequency === 'weekly') {
-        // 周分账
-        const totalWeeks = Math.floor(totalDays / 7);
-        const pcfWeekly = pcfDaily * 7;
-        const irrWeekly = calculateIRR(totalInvestmentYuan, pcfWeekly, totalWeeks);
-        irrValue = ((Math.pow(1 + irrWeekly / 100, 52) - 1) * 100);
         irrLabel = 'IRR周分账（年化）';
-        irrFormula = '每周PCF贴现至YITO期限，NPV=0的周利率年化';
+        irrFormula = '每周PCF贴现至YITO联营期限，NPV=0的年化IRR';
     } else if (irrFrequency === 'biweekly') {
-        // 双周分账
-        const totalBiweeks = Math.floor(totalDays / 14);
-        const pcfBiweekly = pcfDaily * 14;
-        const irrBiweekly = calculateIRR(totalInvestmentYuan, pcfBiweekly, totalBiweeks);
-        irrValue = ((Math.pow(1 + irrBiweekly / 100, 26) - 1) * 100);
         irrLabel = 'IRR双周分账（年化）';
-        irrFormula = '每两周PCF贴现至YITO期限，NPV=0的双周利率年化';
+        irrFormula = '每两周PCF贴现至YITO联营期限，NPV=0的年化IRR';
+    }
+
+    // 顶部卡片「IRR（日分账）」：用按年贴现的IRR，避免 period 过大导致指数爆炸
+    let dailyIRRDisplay = '--';
+    if (yitoPeriodDays > 0 && pcfDaily > 0) {
+        const dailyCashFlowsForCard = buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily);
+        const irrAnnual = calculateIRRByDays(totalInvestmentYuan, dailyCashFlowsForCard);
+        if (typeof irrAnnual === 'number' && !isNaN(irrAnnual) && isFinite(irrAnnual)) {
+            dailyIRRDisplay = formatNumberWithDecimals(irrAnnual * 100, 2);
+        }
     }
     
     // 调试输出
@@ -771,12 +780,12 @@ function calculate() {
     console.log('第三部分：投资核心指标');
     console.log('- 预期年收益率:', (annualReturn * 100).toFixed(2), '%');
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
-    console.log('- YITO期限:', yitoPeriodMonths.toFixed(2), '月 (', totalDays.toFixed(0), '天)');
+    console.log('- YITO期限（联营期限）:', yitoPeriodMonths.toFixed(2), '月 (', yitoPeriodDays, '天)');
     console.log('- ROI:', roi.toFixed(2), '倍');
     console.log('- IRR分账频率:', irrFrequency);
     console.log('- IRR(年化):', irrValue.toFixed(2), '%');
     
-    // 更新显示（使用千分位格式）
+    // 更新显示（含关键指标卡片中的 IRR 日分账）
     updateDisplay({
         pcfResult: formatNumberWithDecimals(pcfDaily, 2),
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
@@ -785,7 +794,8 @@ function calculate() {
         irrResult: formatNumberWithDecimals(irrValue, 2),
         irrLabel: irrLabel,
         irrFormula: irrFormula,
-        yitoResult: formatNumberWithDecimals(yitoPeriodMonths, 2)
+        yitoResult: formatNumberWithDecimals(yitoPeriodMonths, 2),
+        dailyIRR: dailyIRRDisplay
     });
 }
 
@@ -842,8 +852,11 @@ function formatNumber(num) {
     return num.toLocaleString('en-US');
 }
 
-// 格式化数字，添加千分位和指定小数位数
+// 格式化数字，添加千分位和指定小数位数（无效数统一显示为 --，避免出现 NaN）
 function formatNumberWithDecimals(num, decimals) {
+    if (num == null || typeof num !== 'number' || isNaN(num) || !isFinite(num)) {
+        return '--';
+    }
     return num.toLocaleString('en-US', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
@@ -894,6 +907,11 @@ function updateDisplay(values) {
     if (yitoElement) {
         yitoElement.textContent = values.yitoResult;
     }
+
+    const dailyIRRElement = document.getElementById('dailyIRR');
+    if (dailyIRRElement && values.dailyIRR !== undefined) {
+        dailyIRRElement.textContent = values.dailyIRR;
+    }
 }
 
 // 重置为默认值
@@ -914,15 +932,53 @@ function resetCalculator() {
     }, 10);
 }
 
-// 页面加载时初始化计算
+// 页面加载时初始化计算（calculate 内部会调用 calculateDailyIRR 更新日分账卡片）
 window.addEventListener('DOMContentLoaded', () => {
     calculate();
-    calculateDailyIRR(); // 计算日分账IRR并显示在关键指标卡片
 });
 
 // ==========================================
-// IRR计算核心函数
+// IRR计算核心函数（防指数爆炸：按年贴现，不用 (1+r)^天数）
 // ==========================================
+
+/**
+ * 按 YITO 期限构造现金流（周聚合）- 用于日分账/周分账，防指数爆炸
+ * @param {number} yitoPeriodDays - 联营期限总天数
+ * @param {number} pcfDaily - 日 PCF 金额
+ * @returns {Array<{days: number, amount: number}>}
+ */
+function buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily) {
+    const flows = [];
+    const fullWeeks = Math.floor(yitoPeriodDays / 7);
+    const remainderDays = yitoPeriodDays % 7;
+    for (let week = 1; week <= fullWeeks; week++) {
+        flows.push({ days: week * 7, amount: pcfDaily * 7 });
+    }
+    if (remainderDays > 0) {
+        flows.push({ days: yitoPeriodDays, amount: pcfDaily * remainderDays });
+    }
+    return flows;
+}
+
+/**
+ * 按 YITO 期限构造现金流（双周聚合）- 用于双周分账，防指数爆炸
+ * @param {number} yitoPeriodDays - 联营期限总天数
+ * @param {number} pcfDaily - 日 PCF 金额
+ * @returns {Array<{days: number, amount: number}>}
+ */
+function buildYitoBiweeklyCashFlows(yitoPeriodDays, pcfDaily) {
+    const flows = [];
+    const periodDays = 14;
+    const fullPeriods = Math.floor(yitoPeriodDays / periodDays);
+    const remainderDays = yitoPeriodDays % periodDays;
+    for (let p = 1; p <= fullPeriods; p++) {
+        flows.push({ days: p * periodDays, amount: pcfDaily * periodDays });
+    }
+    if (remainderDays > 0) {
+        flows.push({ days: yitoPeriodDays, amount: pcfDaily * remainderDays });
+    }
+    return flows;
+}
 
 /**
  * 计算以天数为单位的现金流IRR（内部收益率），直接返回年化IRR
@@ -1017,80 +1073,57 @@ function calculateIRRByDays(
 
 // ==========================================
 // 日分账IRR计算（显示在关键指标卡片中）
+// 年限 = YITO 期限（联营期限），由「月PCF 与 预期月收益率」推导，非固定值
 // ==========================================
 
-// 计算日分账IRR
+/**
+ * 计算日分账年化IRR并更新顶部卡片。
+ * 回收期与现金流年限均按「联营期限 YITO」定义：
+ *   YITO（月）= 总投资额 / (月PCF - 总投资额×月预期收益率)
+ *   YITO（天）= YITO（月）× 30
+ * 日分账：在联营期限内的每一天收到一笔 PCF，求 NPV=0 的日利率并年化。
+ */
 function calculateDailyIRR() {
-    // 从表单获取基础数据
-    const roomCount = parseFloat(document.getElementById('roomCount').value) || 16;
-    const occupancyRate = parseFloat(document.getElementById('occupancy').value) / 100 || 0.93;
-    const avgPrice = parseFloat(document.getElementById('avgPrice').value) || 280;
-    const profitShareRate = parseFloat(document.getElementById('profitShareRate').value) / 100 || 0.30;
-    const deviceCount = parseFloat(document.getElementById('deviceCount').value) || 28;
-    const equipmentCost = parseFloat(document.getElementById('equipmentCost').value) || 31.64;
-    const annualReturn = parseFloat(document.getElementById('annualReturn').value) / 100 || 0.18;
-    
-    // 计算PCF和总投资
+    const roomCount = parseFloat(document.getElementById('roomCount')?.value) || 100;
+    const occupancyRate = (parseFloat(document.getElementById('occupancyRate')?.value) / 100) || 1;
+    const avgPrice = parseFloat(document.getElementById('avgPrice')?.value) || 200;
+    const profitShareRate = (parseFloat(document.getElementById('profitShareRate')?.value) / 100) || 0.10;
+    const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value) || 100;
+    const annualReturn = (parseFloat(document.getElementById('expectedReturn')?.value) / 100) || 0.18;
+
     const pcfDaily = roomCount * occupancyRate * avgPrice * profitShareRate;
     const totalInvestmentYuan = equipmentCost * 10000;
     const monthlyReturn = annualReturn / 12;
     const pcfMonthly = pcfDaily * 30;
-    
-    // 计算YITO期限（联营期限）
-    const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0 
+
+    // 联营期限（YITO）：月PCF × T = 总投资 × (1 + 月r×T) => T = 总投资 / (月PCF - 总投资×月r)
+    const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0
         ? totalInvestmentYuan / (pcfMonthly - totalInvestmentYuan * monthlyReturn)
         : 0;
-    const investmentDays = Math.round(yitoPeriodMonths * 30); // 总投资天数
-    const investmentYears = yitoPeriodMonths / 12; // 转换为年数
-    
-    // 日现金流（已经是竞盛30%的分成）
-    const dailyCashFlow = pcfDaily;
-    
-    console.log('[IRR计算] 基础数据:', {
-        initialInvestment: totalInvestmentYuan.toFixed(2),
-        yitoPeriodMonths: yitoPeriodMonths.toFixed(2),
-        investmentDays: investmentDays,
-        investmentYears: investmentYears.toFixed(2),
-        pcfDaily: pcfDaily.toFixed(2),
-        dailyCashFlow: dailyCashFlow.toFixed(2)
-    });
-    
-    // 优化：使用周度采样来近似日分账IRR，减少计算量
-    // 每周累计7天的现金流
-    const weeklyCashFlow = dailyCashFlow * 7;
-    const totalWeeks = Math.ceil(investmentDays / 7);
-    const weeklyCashFlows = [];
-    for (let week = 1; week <= totalWeeks; week++) {
-        weeklyCashFlows.push({ days: week * 7, amount: weeklyCashFlow });
+    const yitoPeriodDays = Math.round(yitoPeriodMonths * 30); // 联营期限总天数，非固定年限
+
+    if (yitoPeriodDays <= 0 || pcfDaily <= 0) {
+        const el = document.getElementById('dailyIRR');
+        if (el) el.textContent = '--';
+        return;
     }
-    
-    console.log('[IRR计算] 使用周度采样优化');
-    console.log('[IRR计算] 周现金流:', weeklyCashFlow.toFixed(2));
-    console.log('[IRR计算] 现金流数组长度:', weeklyCashFlows.length);
-    console.log('[IRR计算] 第一个现金流:', weeklyCashFlows[0]);
-    console.log('[IRR计算] 最后一个现金流:', weeklyCashFlows[weeklyCashFlows.length - 1]);
-    
-    // 计算IRR
-    const irrDaily = calculateIRRByDays(totalInvestmentYuan, weeklyCashFlows);
-    
-    console.log('[IRR计算] IRR结果:', irrDaily);
-    console.log('[IRR计算] 是否为NaN:', isNaN(irrDaily));
-    console.log('[IRR计算] IRR百分比:', !isNaN(irrDaily) ? (irrDaily * 100).toFixed(2) + '%' : 'NaN');
-    
-    // 更新显示到关键指标卡片
+
+    // 按 YITO 期限构造现金流。为数值稳定用周度采样，最后一周按剩余天数折算
+    const fullWeeks = Math.floor(yitoPeriodDays / 7);
+    const remainderDays = yitoPeriodDays % 7;
+    const cashFlows = [];
+
+    for (let week = 1; week <= fullWeeks; week++) {
+        cashFlows.push({ days: week * 7, amount: pcfDaily * 7 });
+    }
+    if (remainderDays > 0) {
+        cashFlows.push({ days: yitoPeriodDays, amount: pcfDaily * remainderDays });
+    }
+
+    const irrAnnual = calculateIRRByDays(totalInvestmentYuan, cashFlows);
+
     const dailyIRRElement = document.getElementById('dailyIRR');
-    console.log('[IRR计算] DOM元素:', dailyIRRElement);
-    
     if (dailyIRRElement) {
-        if (!isNaN(irrDaily)) {
-            const displayValue = formatNumberWithDecimals(irrDaily * 100, 2);
-            console.log('[IRR计算] 显示值:', displayValue);
-            dailyIRRElement.textContent = displayValue;
-        } else {
-            dailyIRRElement.textContent = '--';
-            console.error('[IRR计算] IRR计算失败，结果为NaN');
-        }
-    } else {
-        console.error('[IRR计算] 找不到dailyIRR元素');
+        dailyIRRElement.textContent = formatNumberWithDecimals(irrAnnual * 100, 2);
     }
 }

@@ -89,6 +89,7 @@
                 <a href="#hotel" class="nav-item">酒店业</a>
                 <a href="#esports" class="nav-item">电竞产业</a>
                 <a href="#financial" class="nav-item">财务模型</a>
+                <a href="#investment-model" class="nav-item">投资模型</a>
             </div>
         </div>
     </nav>
@@ -726,7 +727,7 @@
             </div>
 
             <!-- 财务计算器 -->
-            <div class="calculator-section">
+            <div id="investment-model" class="calculator-section" aria-label="滴灌通投资模型部分">
                 <div class="calculator-header">
                     <h3>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -759,19 +760,19 @@
                         <div class="calc-inputs">
                             <div class="calc-input-group">
                                 <label for="roomCount">房间数量（间）</label>
-                                <input type="number" id="roomCount" value="16" min="1" max="100" oninput="calculate()">
+                                <input type="number" id="roomCount" value="100" min="1" max="999" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
                                 <label for="occupancyRate">入住率（%）</label>
-                                <input type="number" id="occupancyRate" value="93" min="0" max="100" step="1" oninput="calculate()">
+                                <input type="number" id="occupancyRate" value="100" min="0" max="100" step="1" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
                                 <label for="avgPrice">平均房价（元/间/天）</label>
-                                <input type="number" id="avgPrice" value="280" min="50" max="1000" step="10" oninput="calculate()">
+                                <input type="number" id="avgPrice" value="200" min="50" max="10000" step="10" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
                                 <label for="profitShareRate">分成比例（%）</label>
-                                <input type="number" id="profitShareRate" value="30" min="0" max="100" step="1" oninput="calculate()">
+                                <input type="number" id="profitShareRate" value="10" min="0" max="100" step="1" oninput="calculate()">
                             </div>
                         </div>
                         
@@ -794,11 +795,11 @@
                         <div class="calc-inputs">
                             <div class="calc-input-group">
                                 <label for="deviceCount">电竞设备数量（台）</label>
-                                <input type="number" id="deviceCount" value="28" min="1" max="200" oninput="calculate()">
+                                <input type="number" id="deviceCount" value="100" min="1" max="500" oninput="calculate()">
                             </div>
                             <div class="calc-input-group">
                                 <label for="equipmentCost">电竞设备投入（万元）</label>
-                                <input type="number" id="equipmentCost" value="35.64" min="0" step="0.1" oninput="calculate()">
+                                <input type="number" id="equipmentCost" value="100" min="0" step="0.1" oninput="calculate()">
                             </div>
                         </div>
                         
