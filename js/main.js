@@ -714,18 +714,21 @@ function calculate() {
     // === 投资核心指标计算 ===
     
     // 1. 计算YITO期限（需要先算，因为ROI和IRR都依赖它）
-    // 月PCF × T = 总投资额 × (1 + 月r × T)
-    // T = 总投资额 / (月PCF - 总投资额 × 月r)
-    const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0 
-        ? totalInvestmentYuan / (pcfMonthly - totalInvestmentYuan * monthlyReturn)
+    // 日PCF × T = 总投资额 × (1 + 日r × T)
+    // T = 总投资额 / (日PCF - 总投资额 × 日r)
+    const dailyReturn = annualReturn / 365; // 日收益率
+    const yitoPeriodDays = (pcfDaily - totalInvestmentYuan * dailyReturn) > 0 
+        ? Math.round(totalInvestmentYuan / (pcfDaily - totalInvestmentYuan * dailyReturn))
         : 0;
     
+    // 为了兼容性，也计算月数（用于显示参考）
+    const yitoPeriodMonths = yitoPeriodDays / 30;
+    
     // 2. ROI（投资回报倍数）
-    // ROI = (月PCF × YITO期限) / 总投资额
-    const roi = totalInvestmentYuan > 0 ? (pcfMonthly * yitoPeriodMonths) / totalInvestmentYuan : 0;
+    // ROI = (日PCF × YITO期限) / 总投资额
+    const roi = totalInvestmentYuan > 0 ? (pcfDaily * yitoPeriodDays) / totalInvestmentYuan : 0;
     
     // 3. IRR - 根据选择的分账频率计算（年限 = 联营期限 YITO，由模型推导，非固定值）
-    const yitoPeriodDays = Math.round(yitoPeriodMonths * 30); // 联营期限总天数
     
     let irrValue = 0;
     let irrLabel = '';
@@ -780,6 +783,7 @@ function calculate() {
     console.log('');
     console.log('第三部分：投资核心指标');
     console.log('- 预期年收益率:', (annualReturn * 100).toFixed(2), '%');
+    console.log('- 预期日收益率:', (dailyReturn * 100).toFixed(6), '%');
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
     console.log('- YITO期限（联营期限）:', yitoPeriodDays, '天 (', yitoPeriodMonths.toFixed(2), '个月)');
     console.log('- ROI:', roi.toFixed(2), '倍');
@@ -1110,14 +1114,12 @@ function calculateDailyIRR() {
 
     const pcfDaily = roomCount * occupancyRate * avgPrice * profitShareRate;
     const totalInvestmentYuan = equipmentCost * 10000;
-    const monthlyReturn = annualReturn / 12;
-    const pcfMonthly = pcfDaily * 30;
+    const dailyReturn = annualReturn / 365;
 
-    // 联营期限（YITO）：月PCF × T = 总投资 × (1 + 月r×T) => T = 总投资 / (月PCF - 总投资×月r)
-    const yitoPeriodMonths = (pcfMonthly - totalInvestmentYuan * monthlyReturn) > 0
-        ? totalInvestmentYuan / (pcfMonthly - totalInvestmentYuan * monthlyReturn)
+    // 联营期限（YITO）：日PCF × T = 总投资 × (1 + 日r×T) => T = 总投资 / (日PCF - 总投资×日r)
+    const yitoPeriodDays = (pcfDaily - totalInvestmentYuan * dailyReturn) > 0
+        ? Math.round(totalInvestmentYuan / (pcfDaily - totalInvestmentYuan * dailyReturn))
         : 0;
-    const yitoPeriodDays = Math.round(yitoPeriodMonths * 30); // 联营期限总天数，非固定年限
 
     if (yitoPeriodDays <= 0 || pcfDaily <= 0) {
         const el = document.getElementById('dailyIRR');
