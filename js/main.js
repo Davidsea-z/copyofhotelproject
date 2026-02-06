@@ -724,11 +724,15 @@ function calculate() {
     // 为了兼容性，也计算月数（用于显示参考）
     const yitoPeriodMonths = yitoPeriodDays / 30;
     
-    // 2. ROI（投资回报倍数）
-    // ROI = (日PCF × YITO期限) / 总投资额
-    const roi = totalInvestmentYuan > 0 ? (pcfDaily * yitoPeriodDays) / totalInvestmentYuan : 0;
+    // 2. 目标回收总额
+    // 目标回收总额 = 日PCF × YITO期限
+    const targetRecovery = pcfDaily * yitoPeriodDays;
     
-    // 3. IRR - 根据选择的分账频率计算（年限 = 联营期限 YITO，由模型推导，非固定值）
+    // 3. ROI（投资回报倍数）
+    // ROI = 目标回收总额 / 总投资额
+    const roi = totalInvestmentYuan > 0 ? targetRecovery / totalInvestmentYuan : 0;
+    
+    // 4. IRR - 根据选择的分账频率计算（年限 = 联营期限 YITO，由模型推导，非固定值）
     
     let irrValue = 0;
     let irrLabel = '';
@@ -786,6 +790,7 @@ function calculate() {
     console.log('- 预期日收益率:', (dailyReturn * 100).toFixed(6), '%');
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
     console.log('- YITO期限（联营期限）:', yitoPeriodDays, '天 (', yitoPeriodMonths.toFixed(2), '个月)');
+    console.log('- 目标回收总额:', targetRecovery.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元');
     console.log('- ROI:', roi.toFixed(2), '倍');
     console.log('- IRR分账频率:', irrFrequency);
     console.log('- 现金流笔数:', cashFlows.length, '笔');
@@ -796,6 +801,7 @@ function calculate() {
         pcfResult: formatNumberWithDecimals(pcfDaily, 2),
         avgEquipmentPrice: formatNumber(Math.round(avgEquipmentPrice)),
         totalInvestment2: formatNumberWithDecimals(totalInvestment, 2),
+        targetRecoveryResult: formatNumber(Math.round(targetRecovery)),
         roiResult: formatNumberWithDecimals(roi, 2),
         irrResult: formatNumberWithDecimals(irrValue, 2),
         irrLabel: irrLabel,
@@ -889,6 +895,16 @@ function updateDisplay(values) {
     }
     
     // 更新第三部分投资核心指标
+    const yitoElement = document.getElementById('yitoResult');
+    if (yitoElement) {
+        yitoElement.textContent = values.yitoResult;
+    }
+    
+    const targetRecoveryElement = document.getElementById('targetRecoveryResult');
+    if (targetRecoveryElement) {
+        targetRecoveryElement.textContent = values.targetRecoveryResult;
+    }
+    
     const roiElement = document.getElementById('roiResult');
     if (roiElement) {
         roiElement.textContent = values.roiResult;
@@ -907,11 +923,6 @@ function updateDisplay(values) {
     const irrFormulaElement = document.getElementById('irrFormula');
     if (irrFormulaElement) {
         irrFormulaElement.textContent = values.irrFormula;
-    }
-    
-    const yitoElement = document.getElementById('yitoResult');
-    if (yitoElement) {
-        yitoElement.textContent = values.yitoResult;
     }
 
     const dailyIRRElement = document.getElementById('dailyIRR');
