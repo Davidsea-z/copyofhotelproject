@@ -781,7 +781,7 @@ function calculate() {
     console.log('第三部分：投资核心指标');
     console.log('- 预期年收益率:', (annualReturn * 100).toFixed(2), '%');
     console.log('- 预期月收益率:', (monthlyReturn * 100).toFixed(4), '%');
-    console.log('- YITO期限（联营期限）:', yitoPeriodMonths.toFixed(2), '月 (', yitoPeriodDays, '天)');
+    console.log('- YITO期限（联营期限）:', yitoPeriodDays, '天 (', yitoPeriodMonths.toFixed(2), '个月)');
     console.log('- ROI:', roi.toFixed(2), '倍');
     console.log('- IRR分账频率:', irrFrequency);
     console.log('- 现金流笔数:', cashFlows.length, '笔');
@@ -796,7 +796,7 @@ function calculate() {
         irrResult: formatNumberWithDecimals(irrValue, 2),
         irrLabel: irrLabel,
         irrFormula: irrFormula,
-        yitoResult: formatNumberWithDecimals(yitoPeriodMonths, 2),
+        yitoResult: formatNumber(yitoPeriodDays),
         dailyIRR: dailyIRRDisplay
     });
 }
