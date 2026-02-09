@@ -9,6 +9,12 @@ Thumbs.db
 .vscode/
 *.sublime-*
 
+# Dependencies
+node_modules/
+
+# Wrangler
+.wrangler/
+
 # Logs
 *.log
 npm-debug.log*
