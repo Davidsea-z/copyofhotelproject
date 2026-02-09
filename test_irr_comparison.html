@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IRR 复投效果对比测试</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .card h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .result {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .improvement {
+            background: rgba(16, 185, 129, 0.3);
+            border: 2px solid #10b981;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .params {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .params div {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 IRR 复投效果对比测试</h1>
+        
+        <div class="params">
+            <h3>测试参数：</h3>
+            <div>📊 房间数量：100 间</div>
+            <div>📈 入住率：100%</div>
+            <div>💰 平均房价：200 元/天</div>
+            <div>🤝 分成比例：10%</div>
+            <div>💻 设备投入：100 万元</div>
+            <div>📅 预期年收益率：18%</div>
+            <div>⏰ 分账频率：日分账</div>
+        </div>
+
+        <div class="comparison">
+            <div class="card">
+                <h2>❌ 不考虑复投</h2>
+                <div class="result" id="withoutReinvest">计算中...</div>
+                <div style="text-align: center; opacity: 0.8;">传统 IRR 计算方法</div>
+            </div>
+            
+            <div class="card">
+                <h2>✅ 考虑复投</h2>
+                <div class="result" id="withReinvest">计算中...</div>
+                <div style="text-align: center; opacity: 0.8;">复投 IRR 计算方法</div>
+            </div>
+        </div>
+
+        <div class="improvement" id="improvement">
+            正在计算收益提升...
+        </div>
+    </div>
+
+    <script>
+        // 测试参数
+        const params = {
+            roomCount: 100,
+            occupancyRate: 1.0,
+            avgPrice: 200,
+            profitShareRate: 0.10,
+            equipmentCost: 100, // 万元
+            annualReturn: 0.18
+        };
+
+        // 计算 PCF 和 YITO
+        const pcfDaily = params.roomCount * params.occupancyRate * params.avgPrice * params.profitShareRate;
+        const totalInvestmentYuan = params.equipmentCost * 10000;
+        const dailyReturn = params.annualReturn / 365;
+        const yitoPeriodDays = Math.round(totalInvestmentYuan / (pcfDaily - totalInvestmentYuan * dailyReturn));
+
+        console.log('日PCF:', pcfDaily);
+        console.log('总投资:', totalInvestmentYuan);
+        console.log('YITO期限:', yitoPeriodDays, '天');
+
+        // 构造现金流
+        function buildDailyCashFlows(days, amount) {
+            const flows = [];
+            for (let day = 1; day <= days; day++) {
+                flows.push({ days: day, amount: amount });
+            }
+            return flows;
+        }
+
+        // IRR 计算函数（简化版）
+        function calculateIRR(investment, cashFlows, withReinvest) {
+            const maxDays = Math.max(...cashFlows.map(f => f.days));
+            const maxYears = maxDays / 365;
+            
+            let irr = 0.1;
+            const maxIter = 1000;
+            const tolerance = 1e-8;
+            
+            for (let iter = 0; iter < maxIter; iter++) {
+                let npv = -investment;
+                let derivative = 0;
+                
+                if (withReinvest) {
+                    for (const flow of cashFlows) {
+                        const t = flow.days / 365;
+                        const remainingYears = maxYears - t;
+                        const logFactor = Math.log(1 + irr);
+                        const compoundFactor = Math.exp(remainingYears * logFactor);
+                        const futureValue = flow.amount * compoundFactor;
+                        const discountFactor = Math.exp(maxYears * logFactor);
+                        npv += futureValue / discountFactor;
+                        
+                        const derivativeFactor = Math.exp((t + 1) * logFactor);
+                        derivative -= (t * flow.amount) / derivativeFactor;
+                    }
+                } else {
+                    for (const flow of cashFlows) {
+                        const t = flow.days / 365;
+                        const logFactor = Math.log(1 + irr);
+                        const factor = Math.exp(t * logFactor);
+                        npv += flow.amount / factor;
+                        
+                        const derivativeFactor = Math.exp((t + 1) * logFactor);
+                        derivative -= (t * flow.amount) / derivativeFactor;
+                    }
+                }
+                
+                if (Math.abs(derivative) < 1e-10) break;
+                
+                const irrNew = irr - npv / derivative;
+                if (Math.abs(irrNew - irr) < tolerance && Math.abs(npv) < 1e-6) {
+                    return irrNew * 100;
+                }
+                
+                irr = Math.max(-0.99, Math.min(10, irrNew));
+            }
+            
+            return irr * 100;
+        }
+
+        // 执行计算
+        const cashFlows = buildDailyCashFlows(yitoPeriodDays, pcfDaily);
+        
+        const irrWithout = calculateIRR(totalInvestmentYuan, cashFlows, false);
+        const irrWith = calculateIRR(totalInvestmentYuan, cashFlows, true);
+        const improvement = irrWith - irrWithout;
+
+        // 显示结果
+        document.getElementById('withoutReinvest').textContent = irrWithout.toFixed(2) + '%';
+        document.getElementById('withReinvest').textContent = irrWith.toFixed(2) + '%';
+        document.getElementById('improvement').innerHTML = `
+            🚀 启用复投后，IRR 提升 <strong>${improvement.toFixed(2)}%</strong> 
+            (从 ${irrWithout.toFixed(2)}% 提升到 ${irrWith.toFixed(2)}%)
+        `;
+
+        console.log('不考虑复投 IRR:', irrWithout.toFixed(2) + '%');
+        console.log('考虑复投 IRR:', irrWith.toFixed(2) + '%');
+        console.log('提升幅度:', improvement.toFixed(2) + '%');
+    </script>
+</body>
+</html>
