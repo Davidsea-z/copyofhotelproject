@@ -691,6 +691,7 @@ function calculate() {
     // 第三部分：投资核心指标参数
     const annualReturn = parseFloat(document.getElementById('expectedReturn')?.value || 18) / 100;
     const irrFrequency = document.getElementById('irrFrequency')?.value || 'daily';
+    const considerReinvestment = document.getElementById('considerReinvestment')?.checked ?? true;
     
     // 计算月收益率（从年收益率转换）
     const monthlyReturn = annualReturn / 12;
@@ -755,7 +756,7 @@ function calculate() {
     }
     
     const irrAnnualDecimal = cashFlows.length > 0
-        ? calculateIRRByDays(totalInvestmentYuan, cashFlows)
+        ? calculateIRRByDays(totalInvestmentYuan, cashFlows, 1000, 1e-8, 365, considerReinvestment)
         : NaN;
     irrValue = (typeof irrAnnualDecimal === 'number' && !isNaN(irrAnnualDecimal)) ? irrAnnualDecimal * 100 : 0;
 
@@ -763,7 +764,7 @@ function calculate() {
     let dailyIRRDisplay = '--';
     if (yitoPeriodDays > 0 && pcfDaily > 0) {
         const dailyCashFlowsForCard = buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily);
-        const irrAnnual = calculateIRRByDays(totalInvestmentYuan, dailyCashFlowsForCard);
+        const irrAnnual = calculateIRRByDays(totalInvestmentYuan, dailyCashFlowsForCard, 1000, 1e-8, 365, considerReinvestment);
         if (typeof irrAnnual === 'number' && !isNaN(irrAnnual) && isFinite(irrAnnual)) {
             dailyIRRDisplay = formatNumberWithDecimals(irrAnnual * 100, 2);
         }
@@ -793,6 +794,7 @@ function calculate() {
     console.log('- 目标回收总额:', targetRecovery.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元');
     console.log('- ROI:', roi.toFixed(2), '倍');
     console.log('- IRR分账频率:', irrFrequency);
+    console.log('- 考虑复投:', considerReinvestment ? '是' : '否');
     console.log('- 现金流笔数:', cashFlows.length, '笔');
     console.log('- IRR(年化):', irrValue.toFixed(2), '%');
     
@@ -1013,14 +1015,15 @@ function buildYitoBiweeklyCashFlows(yitoPeriodDays, pcfDaily) {
 }
 
 /**
- * 计算以天数为单位的现金流IRR（内部收益率），直接返回年化IRR
- * 解决超大天数（如660天）的数值爆炸/下溢问题，支持任意时间点现金流
+ * 计算以天数为单位的现金流IRR（内部收益率），考虑复投，直接返回年化IRR
+ * 每期回收的资金按同样的年化收益率复投，计算复投后的总收益
  * @param {number} initialInvestment - 初始投资额（正数，代表现金流出，如10000）
  * @param {Array<Object>} cashFlowDetails - 现金流详情数组（每笔流入的天数和金额）
  *                                          格式：[{days: 660, amount: 12000}, {days: 300, amount: 5000}]
  * @param {number} [maxIterations=1000] - 最大迭代次数（默认1000，足够覆盖绝大多数场景）
  * @param {number} [tolerance=1e-8] - 收敛容差（差值小于此值即认为收敛，默认1e-8保证精度）
  * @param {number} [daysPerYear=365] - 一年的计息天数（默认365，可改为360适配金融行业规则）
+ * @param {boolean} [considerReinvestment=true] - 是否考虑复投（默认true）
  * @returns {number} 年化IRR（保留6位小数，失败返回NaN）
  */
 function calculateIRRByDays(
@@ -1028,7 +1031,8 @@ function calculateIRRByDays(
     cashFlowDetails,
     maxIterations = 1000,
     tolerance = 1e-8,
-    daysPerYear = 365
+    daysPerYear = 365,
+    considerReinvestment = true
 ) {
     // 第一步：前置参数校验，避免无效计算
     if (
@@ -1040,11 +1044,23 @@ function calculateIRRByDays(
         return NaN;
     }
 
+    // 如果考虑复投，需要重新构造现金流
+    let processedCashFlows = cashFlowDetails;
+    if (considerReinvestment) {
+        // 复投模式：将每期回收的资金在剩余期间按IRR复利
+        // 最终现金流 = 初始现金流 × (1 + IRR)^剩余天数
+        // 这需要在迭代中动态计算
+    }
+
     // 第二步：预处理现金流——天数转年数，从根源规避超大t值的指数爆炸
-    const cashFlowsWithYears = cashFlowDetails.map(flow => ({
+    const cashFlowsWithYears = processedCashFlows.map(flow => ({
         years: flow.days / daysPerYear, // 核心：660天 → 660/365 ≈ 1.808年，缩小t量级
         amount: flow.amount
     }));
+
+    // 获取最大天数（项目总期限）
+    const maxDays = Math.max(...cashFlowDetails.map(f => f.days));
+    const maxYears = maxDays / daysPerYear;
 
     // 第三步：初始化牛顿迭代参数，选择合理初始值（年化10%，贴近真实投资场景）
     let irr = 0.1; // 初始值设为0.1（10%），避免与真实解差距过大导致迭代发散
@@ -1054,21 +1070,46 @@ function calculateIRRByDays(
         let npv = -initialInvestment; // 净现值初始化：初始投资为现金流出，取负值
         let derivative = 0; // NPV对irr的一阶导数初始化
 
-        // 遍历所有现金流，计算当前irr对应的NPV和导数
-        for (const flow of cashFlowsWithYears) {
-            const t = flow.years; // 此时t是年数（如1.808），而非原始天数（660）
-            const cashAmount = flow.amount;
+        if (considerReinvestment) {
+            // 复投模式：每笔现金流回收后，在剩余期间按当前IRR复投
+            for (const flow of cashFlowDetails) {
+                const t = flow.days / daysPerYear;
+                const cashAmount = flow.amount;
+                const remainingYears = maxYears - t; // 剩余可复投的年数
 
-            // 优化指数运算：用Math.exp() + Math.log()替代Math.pow()，提升大数/小数运算稳定性
-            const logFactor = Math.log(1 + irr);
-            const factor = Math.exp(t * logFactor); // 等价于Math.pow(1 + irr, t)，更稳定
-            const derivativeFactor = Math.exp((t + 1) * logFactor); // 等价于Math.pow(1 + irr, t+1)
+                // 该笔现金流在期末的复利终值 = 现金流 × (1 + irr)^剩余年数
+                const logFactor = Math.log(1 + irr);
+                const compoundFactor = Math.exp(remainingYears * logFactor); // (1 + irr)^剩余年数
+                const futureValue = cashAmount * compoundFactor;
 
-            // 累加计算NPV（净现值）
-            npv += cashAmount / factor;
+                // 将期末终值贴现到现在
+                const discountFactor = Math.exp(maxYears * logFactor); // (1 + irr)^总年数
+                npv += futureValue / discountFactor;
 
-            // 累加计算导数（NPV对irr的一阶导数）
-            derivative -= (t * cashAmount) / derivativeFactor;
+                // 计算导数
+                // d(NPV)/d(irr) = d[CF × (1+irr)^(T-t) / (1+irr)^T] / d(irr)
+                //                = CF × d[(1+irr)^(-t)] / d(irr)
+                //                = CF × (-t) × (1+irr)^(-t-1)
+                const derivativeFactor = Math.exp((t + 1) * logFactor);
+                derivative -= (t * cashAmount) / derivativeFactor;
+            }
+        } else {
+            // 标准模式：不考虑复投
+            for (const flow of cashFlowsWithYears) {
+                const t = flow.years;
+                const cashAmount = flow.amount;
+
+                // 优化指数运算：用Math.exp() + Math.log()替代Math.pow()，提升大数/小数运算稳定性
+                const logFactor = Math.log(1 + irr);
+                const factor = Math.exp(t * logFactor); // 等价于Math.pow(1 + irr, t)，更稳定
+                const derivativeFactor = Math.exp((t + 1) * logFactor); // 等价于Math.pow(1 + irr, t+1)
+
+                // 累加计算NPV（净现值）
+                npv += cashAmount / factor;
+
+                // 累加计算导数（NPV对irr的一阶导数）
+                derivative -= (t * cashAmount) / derivativeFactor;
+            }
         }
 
         // 保护机制：避免导数过小导致除以0，中断迭代
@@ -1122,6 +1163,7 @@ function calculateDailyIRR() {
     const profitShareRate = (parseFloat(document.getElementById('profitShareRate')?.value) / 100) || 0.10;
     const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value) || 100;
     const annualReturn = (parseFloat(document.getElementById('expectedReturn')?.value) / 100) || 0.18;
+    const considerReinvestment = document.getElementById('considerReinvestment')?.checked ?? true;
 
     const pcfDaily = roomCount * occupancyRate * avgPrice * profitShareRate;
     const totalInvestmentYuan = equipmentCost * 10000;
@@ -1141,7 +1183,7 @@ function calculateDailyIRR() {
     // 按 YITO 期限构造现金流（真实日分账，每天一笔）
     const cashFlows = buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily);
 
-    const irrAnnual = calculateIRRByDays(totalInvestmentYuan, cashFlows);
+    const irrAnnual = calculateIRRByDays(totalInvestmentYuan, cashFlows, 1000, 1e-8, 365, considerReinvestment);
 
     const dailyIRRElement = document.getElementById('dailyIRR');
     if (dailyIRRElement) {
