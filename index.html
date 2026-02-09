@@ -730,10 +730,10 @@
                     <div class="calc-inputs-inline">
                         <div class="calc-input-group" style="flex-direction: row; align-items: center; gap: 12px;">
                             <input type="checkbox" id="considerReinvestment" checked onchange="calculate()" style="width: 20px; height: 20px; cursor: pointer;">
-                            <label for="considerReinvestment" style="margin: 0; cursor: pointer; font-weight: 600;">考虑复投（每期回收金额按IRR复利）</label>
+                            <label for="considerReinvestment" style="margin: 0; cursor: pointer; font-weight: 600;">考虑复投（MIRR修正IRR）</label>
                         </div>
                         <div class="calc-note" style="font-size: 13px; color: rgba(255,255,255,0.6); padding: 8px 12px; background: rgba(99, 102, 241, 0.1); border-radius: 8px; border-left: 3px solid #6366f1;">
-                            💡 启用后：每期分账资金在剩余期间按IRR复投，显著提高实际收益率
+                            💡 启用后：每期回收资金按预期收益率(18%)复投至期末，计算MIRR（修正内部收益率）
                         </div>
                     </div>
                     
