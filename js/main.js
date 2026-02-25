@@ -691,9 +691,8 @@ function calculate() {
     // 第三部分：投资核心指标参数
     const annualReturn = parseFloat(document.getElementById('expectedReturn')?.value || 18) / 100;
     const irrFrequency = document.getElementById('irrFrequency')?.value || 'daily';
-    const considerReinvestment = document.getElementById('considerReinvestment')?.checked ?? true;
     
-    // 复投时使用的再投资收益率（使用预期年收益率作为再投资率）
+    // 始终使用 MIRR（修正内部收益率），再投资率使用预期年收益率
     const reinvestmentRate = annualReturn;
     
     // 计算月收益率（从年收益率转换）
@@ -742,26 +741,30 @@ function calculate() {
     let irrLabel = '';
     let irrFormula = '';
     
-    // 根据分账频率选择不同的现金流构造方式（按年贴现，避免 (1+r)^期数 指数爆炸）
+    // 根据分账频率设置标签
+    if (irrFrequency === 'daily') {
+        irrLabel = 'MIRR日分账（年化）';
+        irrFormula = '每日回收按预期收益率复投，计算修正IRR';
+    } else if (irrFrequency === 'weekly') {
+        irrLabel = 'MIRR周分账（年化）';
+        irrFormula = '每周回收按预期收益率复投，计算修正IRR';
+    } else if (irrFrequency === 'biweekly') {
+        irrLabel = 'MIRR双周分账（年化）';
+        irrFormula = '每两周回收按预期收益率复投，计算修正IRR';
+    }
+    
+    // 根据分账频率构造现金流
     let cashFlows = [];
     if (irrFrequency === 'daily') {
         cashFlows = buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily);
-        irrLabel = 'IRR日分账（年化）';
-        irrFormula = '每日PCF贴现至YITO联营期限，NPV=0的年化IRR';
     } else if (irrFrequency === 'weekly') {
         cashFlows = buildYitoWeeklyCashFlows(yitoPeriodDays, pcfDaily);
-        irrLabel = 'IRR周分账（年化）';
-        irrFormula = '每周PCF贴现至YITO联营期限，NPV=0的年化IRR';
     } else if (irrFrequency === 'biweekly') {
         cashFlows = buildYitoBiweeklyCashFlows(yitoPeriodDays, pcfDaily);
-        irrLabel = 'IRR双周分账（年化）';
-        irrFormula = '每两周PCF贴现至YITO联营期限，NPV=0的年化IRR';
     }
     
     const irrAnnualDecimal = cashFlows.length > 0
-        ? (considerReinvestment 
-            ? calculateMIRR(totalInvestmentYuan, cashFlows, reinvestmentRate, 365)
-            : calculateIRRByDays(totalInvestmentYuan, cashFlows, 1000, 1e-8, 365, false))
+        ? calculateMIRR(totalInvestmentYuan, cashFlows, reinvestmentRate, 365)
         : NaN;
     irrValue = (typeof irrAnnualDecimal === 'number' && !isNaN(irrAnnualDecimal)) ? irrAnnualDecimal * 100 : 0;
 
@@ -769,9 +772,7 @@ function calculate() {
     let dailyIRRDisplay = '--';
     if (yitoPeriodDays > 0 && pcfDaily > 0) {
         const dailyCashFlowsForCard = buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily);
-        const irrAnnual = considerReinvestment
-            ? calculateMIRR(totalInvestmentYuan, dailyCashFlowsForCard, annualReturn, 365)
-            : calculateIRRByDays(totalInvestmentYuan, dailyCashFlowsForCard, 1000, 1e-8, 365, false);
+        const irrAnnual = calculateMIRR(totalInvestmentYuan, dailyCashFlowsForCard, annualReturn, 365);
         if (typeof irrAnnual === 'number' && !isNaN(irrAnnual) && isFinite(irrAnnual)) {
             dailyIRRDisplay = formatNumberWithDecimals(irrAnnual * 100, 2);
         }
@@ -801,9 +802,9 @@ function calculate() {
     console.log('- 目标回收总额:', targetRecovery.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), '元');
     console.log('- ROI:', roi.toFixed(2), '倍');
     console.log('- IRR分账频率:', irrFrequency);
-    console.log('- 考虑复投:', considerReinvestment ? '是' : '否');
+    console.log('- 使用 MIRR（修正IRR）- 再投资率:', (annualReturn * 100).toFixed(2) + '%');
     console.log('- 现金流笔数:', cashFlows.length, '笔');
-    console.log('- IRR(年化):', irrValue.toFixed(2), '%');
+    console.log('- MIRR(年化):', irrValue.toFixed(2), '%');
     
     // 更新显示（含关键指标卡片中的 IRR 日分账）
     updateDisplay({
@@ -1126,7 +1127,6 @@ function calculateDailyIRR() {
     const profitShareRate = (parseFloat(document.getElementById('profitShareRate')?.value) / 100) || 0.10;
     const equipmentCost = parseFloat(document.getElementById('equipmentCost')?.value) || 100;
     const annualReturn = (parseFloat(document.getElementById('expectedReturn')?.value) / 100) || 0.18;
-    const considerReinvestment = document.getElementById('considerReinvestment')?.checked ?? true;
 
     const pcfDaily = roomCount * occupancyRate * avgPrice * profitShareRate;
     const totalInvestmentYuan = equipmentCost * 10000;
@@ -1146,9 +1146,8 @@ function calculateDailyIRR() {
     // 按 YITO 期限构造现金流（真实日分账，每天一笔）
     const cashFlows = buildYitoDailyCashFlows(yitoPeriodDays, pcfDaily);
 
-    const irrAnnual = considerReinvestment
-        ? calculateMIRR(totalInvestmentYuan, cashFlows, annualReturn, 365)
-        : calculateIRRByDays(totalInvestmentYuan, cashFlows, 1000, 1e-8, 365, false);
+    // 始终使用 MIRR
+    const irrAnnual = calculateMIRR(totalInvestmentYuan, cashFlows, annualReturn, 365);
 
     const dailyIRRElement = document.getElementById('dailyIRR');
     if (dailyIRRElement) {

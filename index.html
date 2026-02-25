@@ -436,12 +436,12 @@
 
                 <div class="key-metric-card">
                     <div class="metric-content">
-                        <div class="metric-label-large">IRR（日分账）</div>
+                        <div class="metric-label-large">MIRR（日分账）</div>
                         <div class="metric-value-large">
                             <span class="number" id="dailyIRR">--</span>
                             <span class="unit">%</span>
                         </div>
-                        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem;">年化内部收益率</div>
+                        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem;">年化修正收益率</div>
                     </div>
                 </div>
             </div>
@@ -727,14 +727,8 @@
                         </div>
                     </div>
                     
-                    <div class="calc-inputs-inline">
-                        <div class="calc-input-group" style="flex-direction: row; align-items: center; gap: 12px;">
-                            <input type="checkbox" id="considerReinvestment" checked onchange="calculate()" style="width: 20px; height: 20px; cursor: pointer;">
-                            <label for="considerReinvestment" style="margin: 0; cursor: pointer; font-weight: 600;">考虑复投（MIRR修正IRR）</label>
-                        </div>
-                        <div class="calc-note" style="font-size: 13px; color: rgba(255,255,255,0.6); padding: 8px 12px; background: rgba(99, 102, 241, 0.1); border-radius: 8px; border-left: 3px solid #6366f1;">
-                            💡 启用后：每期回收资金按预期收益率(18%)复投至期末，计算MIRR（修正内部收益率）
-                        </div>
+                    <div class="calc-note" style="font-size: 13px; color: rgba(255,255,255,0.6); padding: 8px 12px; background: rgba(99, 102, 241, 0.1); border-radius: 8px; border-left: 3px solid #6366f1; margin-bottom: 16px;">
+                        💡 <strong>MIRR计算说明</strong>：每期回收资金按预期收益率复投至期末，计算修正内部收益率（更符合实际投资场景）
                     </div>
                     
                     <!-- 计算结果 -->
