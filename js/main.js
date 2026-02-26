@@ -1196,3 +1196,459 @@ function calculateMIRR(initialInvestment, cashFlowDetails, reinvestmentRate, day
     
     return mirr;
 }
+
+// ==========================================
+// 项目评估系统
+// ==========================================
+
+// 案例数据库
+const benchmarkCases = [
+    {
+        name: "浙江人民广场店",
+        location: "core",
+        type: "连锁酒店",
+        rooms: 30,
+        beforePrice: 200,
+        beforeOccupancy: 60,
+        afterPrice: 300,
+        afterOccupancy: 95,
+        investment: 80,
+        payback: 5,
+        roi: 275
+    },
+    {
+        name: "华东全新电竞店",
+        location: "development",
+        type: "全新酒店",
+        rooms: 40,
+        beforePrice: 180,
+        beforeOccupancy: 60,
+        afterPrice: 280,
+        afterOccupancy: 90,
+        investment: 250,
+        payback: 36,
+        roi: 88
+    },
+    {
+        name: "华东商务酒店",
+        location: "development",
+        type: "商务酒店",
+        rooms: 20,
+        beforePrice: 160,
+        beforeOccupancy: 60,
+        afterPrice: 240,
+        afterOccupancy: 92,
+        investment: 35,
+        payback: 6,
+        roi: 257
+    },
+    {
+        name: "华东存量酒店",
+        location: "integration",
+        type: "存量改造",
+        rooms: 40,
+        beforePrice: 150,
+        beforeOccupancy: 50,
+        afterPrice: 210,
+        afterOccupancy: 75,
+        investment: 100,
+        payback: 6,
+        roi: 90
+    }
+];
+
+// 区域评级数据
+const locationRatings = {
+    core: { name: "核心商圈", score: 25, priceMultiplier: 1.5, occupancyBonus: 35 },
+    development: { name: "城市开发区", score: 20, priceMultiplier: 1.35, occupancyBonus: 30 },
+    integration: { name: "产城融合区", score: 18, priceMultiplier: 1.25, occupancyBonus: 25 },
+    scenic: { name: "景区周边", score: 22, priceMultiplier: 1.4, occupancyBonus: 30 }
+};
+
+// 显卡配置评级
+const gpuRatings = {
+    high: { name: "RTX5070及以上", score: 20, priceBonus: 50 },
+    mid: { name: "RTX5060Ti/5070", score: 18, priceBonus: 35 },
+    entry: { name: "RTX5060", score: 15, priceBonus: 20 }
+};
+
+// 初始化评估系统
+document.addEventListener('DOMContentLoaded', function() {
+    const evaluateBtn = document.getElementById('evaluateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    if (evaluateBtn) {
+        evaluateBtn.addEventListener('click', evaluateProject);
+    }
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetEvaluationForm);
+    }
+});
+
+// 评估项目函数
+function evaluateProject() {
+    // 获取表单数据
+    const formData = {
+        name: document.getElementById('projectName').value,
+        location: document.getElementById('projectLocation').value,
+        hotelType: document.getElementById('hotelType').value,
+        totalRooms: parseInt(document.getElementById('totalRooms').value) || 0,
+        renovationRooms: parseInt(document.getElementById('renovationRooms').value) || 0,
+        beforePrice: parseFloat(document.getElementById('beforePrice').value) || 0,
+        beforeOccupancy: parseFloat(document.getElementById('beforeOccupancy').value) || 0,
+        beforeRevenue: parseFloat(document.getElementById('beforeRevenue').value) || 0,
+        budget: parseFloat(document.getElementById('renovationBudget').value) || 0,
+        equipmentRatio: parseFloat(document.getElementById('equipmentRatio').value) || 0,
+        targetPrice: parseFloat(document.getElementById('targetPrice').value) || 0,
+        targetOccupancy: parseFloat(document.getElementById('targetOccupancy').value) || 0,
+        gpuLevel: document.getElementById('gpuLevel').value
+    };
+    
+    // 验证必填字段
+    if (!formData.name || !formData.location || !formData.hotelType || 
+        formData.totalRooms === 0 || formData.renovationRooms === 0 ||
+        formData.beforePrice === 0 || formData.beforeOccupancy === 0 ||
+        formData.budget === 0 || formData.targetPrice === 0 || 
+        formData.targetOccupancy === 0 || !formData.gpuLevel) {
+        alert('请填写所有必填字段！');
+        return;
+    }
+    
+    // 执行评估计算
+    const evaluation = calculateEvaluation(formData);
+    
+    // 显示评估结果
+    displayEvaluationResults(evaluation, formData);
+}
+
+// 计算评估分数
+function calculateEvaluation(data) {
+    const result = {
+        finance: 0,
+        market: 0,
+        payback: 0,
+        risk: 0,
+        overall: 0,
+        details: {}
+    };
+    
+    // 1. 财务收益评分（30分）
+    const projectedMonthlyRevenue = data.renovationRooms * data.targetPrice * (data.targetOccupancy / 100) * 30;
+    const projectedYearlyRevenue = projectedMonthlyRevenue * 12 / 10000; // 万元
+    const projectedProfit = projectedYearlyRevenue * 0.65; // 假设65%利润率
+    const roi = (projectedProfit / data.budget) * 100;
+    
+    result.details.projectedRevenue = projectedYearlyRevenue.toFixed(2);
+    result.details.projectedProfit = projectedProfit.toFixed(2);
+    result.details.projectedROI = roi.toFixed(1);
+    
+    // ROI评分
+    if (roi >= 200) result.finance = 30;
+    else if (roi >= 150) result.finance = 25;
+    else if (roi >= 100) result.finance = 20;
+    else if (roi >= 80) result.finance = 15;
+    else result.finance = 10;
+    
+    // 2. 市场潜力评分（25分）
+    const locationInfo = locationRatings[data.location];
+    result.market = locationInfo.score;
+    
+    const priceGrowth = ((data.targetPrice - data.beforePrice) / data.beforePrice * 100).toFixed(1);
+    const occupancyGrowth = (data.targetOccupancy - data.beforeOccupancy).toFixed(1);
+    
+    result.details.locationRating = locationInfo.name;
+    result.details.priceGrowth = priceGrowth;
+    result.details.occupancyGrowth = occupancyGrowth;
+    
+    // 3. 回本周期评分（25分）
+    const paybackMonths = (data.budget / projectedProfit * 12).toFixed(1);
+    result.details.paybackPeriod = paybackMonths;
+    
+    if (paybackMonths <= 6) {
+        result.payback = 25;
+        result.details.paybackRating = "极快（≤6个月）";
+    } else if (paybackMonths <= 10) {
+        result.payback = 20;
+        result.details.paybackRating = "较快（6-10个月）";
+    } else if (paybackMonths <= 15) {
+        result.payback = 15;
+        result.details.paybackRating = "中等（10-15个月）";
+    } else if (paybackMonths <= 24) {
+        result.payback = 10;
+        result.details.paybackRating = "较慢（15-24个月）";
+    } else {
+        result.payback = 5;
+        result.details.paybackRating = "慢（>24个月）";
+    }
+    
+    // 4. 风险控制评分（20分）
+    const gpuInfo = gpuRatings[data.gpuLevel];
+    let riskScore = gpuInfo.score;
+    
+    result.details.equipmentRating = gpuInfo.name;
+    
+    // 预算合理性检查
+    const budgetPerRoom = data.budget * 10000 / data.renovationRooms;
+    if (budgetPerRoom >= 25000 && budgetPerRoom <= 35000) {
+        result.details.budgetRating = "合理（2.5-3.5万/间）";
+    } else if (budgetPerRoom < 25000) {
+        result.details.budgetRating = "偏低（<2.5万/间）";
+        riskScore -= 2;
+    } else {
+        result.details.budgetRating = "偏高（>3.5万/间）";
+        riskScore -= 1;
+    }
+    
+    // 设备占比检查
+    if (data.equipmentRatio >= 70 && data.equipmentRatio <= 80) {
+        result.details.equipmentRatioRating = "优秀（70-80%）";
+    } else if (data.equipmentRatio >= 60) {
+        result.details.equipmentRatioRating = "良好（60-70%）";
+        riskScore -= 2;
+    } else {
+        result.details.equipmentRatioRating = "不足（<60%）";
+        riskScore -= 4;
+    }
+    
+    result.risk = Math.max(0, riskScore);
+    
+    // 风险等级
+    if (result.risk >= 18) result.details.riskLevel = "低风险";
+    else if (result.risk >= 15) result.details.riskLevel = "中低风险";
+    else if (result.risk >= 12) result.details.riskLevel = "中等风险";
+    else result.details.riskLevel = "较高风险";
+    
+    // 5. 综合评分
+    result.overall = result.finance + result.market + result.payback + result.risk;
+    
+    return result;
+}
+
+// 显示评估结果
+function displayEvaluationResults(evaluation, formData) {
+    const resultsDiv = document.getElementById('evaluationResults');
+    if (!resultsDiv) return;
+    
+    // 显示结果区域
+    resultsDiv.style.display = 'block';
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // 1. 综合评分
+    const overallScore = evaluation.overall;
+    document.getElementById('overallScore').textContent = overallScore;
+    
+    // 更新圆环进度
+    const circumference = 2 * Math.PI * 40; // r=40
+    const offset = circumference - (overallScore / 100) * circumference;
+    const progressRing = document.getElementById('scoreRingProgress');
+    if (progressRing) {
+        progressRing.style.strokeDashoffset = offset;
+    }
+    
+    // 评级和描述
+    const scoreLevel = document.getElementById('scoreLevel');
+    const scoreDescription = document.getElementById('scoreDescription');
+    
+    if (overallScore >= 85) {
+        scoreLevel.textContent = "优秀项目";
+        scoreLevel.className = "score-level excellent";
+        scoreDescription.textContent = "该项目投资价值极高，各项指标优秀，强烈推荐投资";
+    } else if (overallScore >= 70) {
+        scoreLevel.textContent = "良好项目";
+        scoreLevel.className = "score-level good";
+        scoreDescription.textContent = "该项目投资价值良好，综合指标较优，推荐投资";
+    } else if (overallScore >= 55) {
+        scoreLevel.textContent = "中等项目";
+        scoreLevel.className = "score-level fair";
+        scoreDescription.textContent = "该项目投资价值中等，部分指标需优化，谨慎投资";
+    } else {
+        scoreLevel.textContent = "需改进";
+        scoreLevel.className = "score-level poor";
+        scoreDescription.textContent = "该项目投资价值较低，多项指标不达标，不建议投资";
+    }
+    
+    // 2. 详细指标
+    document.getElementById('financeScore').textContent = evaluation.finance;
+    document.getElementById('marketScore').textContent = evaluation.market;
+    document.getElementById('paybackScore').textContent = evaluation.payback;
+    document.getElementById('riskScore').textContent = evaluation.risk;
+    
+    document.getElementById('projectedRevenue').textContent = evaluation.details.projectedRevenue + '万元';
+    document.getElementById('projectedProfit').textContent = evaluation.details.projectedProfit + '万元';
+    document.getElementById('projectedROI').textContent = evaluation.details.projectedROI + '%';
+    
+    document.getElementById('locationRating').textContent = evaluation.details.locationRating;
+    document.getElementById('priceGrowth').textContent = evaluation.details.priceGrowth + '%';
+    document.getElementById('occupancyGrowth').textContent = evaluation.details.occupancyGrowth + '%';
+    
+    document.getElementById('paybackPeriod').textContent = evaluation.details.paybackPeriod + '个月';
+    document.getElementById('paybackRating').textContent = evaluation.details.paybackRating;
+    
+    document.getElementById('equipmentRating').textContent = evaluation.details.equipmentRating;
+    document.getElementById('budgetRating').textContent = evaluation.details.budgetRating;
+    document.getElementById('riskLevel').textContent = evaluation.details.riskLevel;
+    
+    // 3. 投资建议
+    generateInvestmentAdvice(evaluation, formData);
+    
+    // 4. 对标案例
+    generateBenchmarkCases(formData);
+}
+
+// 生成投资建议
+function generateInvestmentAdvice(evaluation, formData) {
+    const overallScore = evaluation.overall;
+    const adviceOverall = document.getElementById('adviceOverall');
+    const adviceStrengths = document.getElementById('adviceStrengths');
+    const adviceRisks = document.getElementById('adviceRisks');
+    const adviceOptimization = document.getElementById('adviceOptimization');
+    
+    // 综合评价
+    if (overallScore >= 85) {
+        adviceOverall.textContent = `${formData.name}是一个优质的电竞化改造项目。该项目在财务收益、市场潜力、回本速度和风险控制方面均表现优秀，具备极高的投资价值。建议立即启动项目，把握市场先机。`;
+    } else if (overallScore >= 70) {
+        adviceOverall.textContent = `${formData.name}是一个良好的电竞化改造项目。该项目综合指标较优，具备较高的投资价值。建议在优化部分细节后启动项目。`;
+    } else if (overallScore >= 55) {
+        adviceOverall.textContent = `${formData.name}是一个中等水平的电竞化改造项目。该项目部分指标需要优化提升，建议在完善方案后再考虑投资。`;
+    } else {
+        adviceOverall.textContent = `${formData.name}的电竞化改造方案需要重新评估。该项目多项指标不达标，建议优化改造方案或暂缓投资。`;
+    }
+    
+    // 优势分析
+    const strengths = [];
+    if (evaluation.finance >= 25) {
+        strengths.push(`财务收益优秀：预计年ROI达${evaluation.details.projectedROI}%，投资回报丰厚`);
+    }
+    if (evaluation.market >= 22) {
+        strengths.push(`市场位置优越：位于${evaluation.details.locationRating}，客流量充沛，房价提升潜力${evaluation.details.priceGrowth}%`);
+    }
+    if (evaluation.payback >= 20) {
+        strengths.push(`回本速度快：预计${evaluation.details.paybackPeriod}个月即可回本，资金周转效率高`);
+    }
+    if (evaluation.risk >= 18) {
+        strengths.push(`风险可控：设备配置${evaluation.details.equipmentRating}，预算分配合理，${evaluation.details.riskLevel}`);
+    }
+    
+    adviceStrengths.innerHTML = strengths.map(s => `<li>${s}</li>`).join('');
+    
+    // 风险提示
+    const risks = [];
+    if (evaluation.finance < 20) {
+        risks.push(`投资回报率偏低（${evaluation.details.projectedROI}%），建议提升房价或入住率以改善收益`);
+    }
+    if (evaluation.market < 18) {
+        risks.push(`区域市场竞争激烈或位置一般，需加强运营推广以提升入住率`);
+    }
+    if (evaluation.payback < 15) {
+        risks.push(`回本周期较长（${evaluation.details.paybackPeriod}个月），对现金流要求较高，需确保资金充裕`);
+    }
+    if (evaluation.risk < 15) {
+        risks.push(`${evaluation.details.riskLevel}，设备配置或预算分配可能存在问题，建议重新评估改造方案`);
+    }
+    if (formData.renovationRooms / formData.totalRooms < 0.5) {
+        risks.push(`改造房间占比偏低（${(formData.renovationRooms / formData.totalRooms * 100).toFixed(0)}%），可能影响品牌效应和整体收益`);
+    }
+    
+    if (risks.length === 0) {
+        risks.push('该项目风险较低，各项指标均在合理范围内');
+    }
+    
+    adviceRisks.innerHTML = risks.map(r => `<li>${r}</li>`).join('');
+    
+    // 优化建议
+    const optimizations = [];
+    if (parseFloat(evaluation.details.priceGrowth) < 40) {
+        optimizations.push(`建议进一步提升房价定位，参考区域标准可提升至${(formData.targetPrice * 1.1).toFixed(0)}元/晚`);
+    }
+    if (formData.targetOccupancy < 85) {
+        optimizations.push(`建议通过OTA平台推广、电竞赛事合作等方式提升目标入住率至85%以上`);
+    }
+    if (formData.equipmentRatio < 75) {
+        optimizations.push(`建议提高电竞设备预算占比至75%以上，确保硬件竞争力`);
+    }
+    if (formData.renovationRooms < 20) {
+        optimizations.push(`建议增加改造房间数至20间以上，以实现规模效应和品牌影响力`);
+    }
+    optimizations.push('建议选择RTX5060Ti及以上显卡配置，确保3-5年内不落后');
+    optimizations.push('建议与滴灌通深度合作，享受品牌、运营、采购等全方位赋能');
+    
+    adviceOptimization.innerHTML = optimizations.map(o => `<li>${o}</li>`).join('');
+}
+
+// 生成对标案例
+function generateBenchmarkCases(formData) {
+    const benchmarkGrid = document.getElementById('benchmarkCases');
+    if (!benchmarkGrid) return;
+    
+    // 筛选相似案例（同区域或相似规模）
+    const similarCases = benchmarkCases.filter(c => 
+        c.location === formData.location || 
+        Math.abs(c.rooms - formData.renovationRooms) <= 15
+    ).slice(0, 3);
+    
+    // 如果没有相似案例，随机选择3个
+    const casesToShow = similarCases.length >= 2 ? similarCases : benchmarkCases.slice(0, 3);
+    
+    benchmarkGrid.innerHTML = casesToShow.map(c => `
+        <div class="benchmark-case">
+            <div class="case-header">
+                <div class="case-name">${c.name}</div>
+                <div class="case-tag">${locationRatings[c.location].name}</div>
+            </div>
+            <div class="case-metrics">
+                <div class="case-metric">
+                    <span class="label">改造房间：</span>
+                    <span class="value">${c.rooms}间</span>
+                </div>
+                <div class="case-metric">
+                    <span class="label">房价提升：</span>
+                    <span class="value highlight">¥${c.beforePrice} → ¥${c.afterPrice}</span>
+                </div>
+                <div class="case-metric">
+                    <span class="label">入住率提升：</span>
+                    <span class="value highlight">${c.beforeOccupancy}% → ${c.afterOccupancy}%</span>
+                </div>
+                <div class="case-metric">
+                    <span class="label">总投资：</span>
+                    <span class="value">${c.investment}万元</span>
+                </div>
+                <div class="case-metric">
+                    <span class="label">回本周期：</span>
+                    <span class="value highlight">${c.payback}个月</span>
+                </div>
+                <div class="case-metric">
+                    <span class="label">ROI：</span>
+                    <span class="value highlight">${c.roi}%</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 重置表单
+function resetEvaluationForm() {
+    // 重置所有输入字段
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectLocation').value = '';
+    document.getElementById('hotelType').value = '';
+    document.getElementById('totalRooms').value = '';
+    document.getElementById('renovationRooms').value = '';
+    document.getElementById('beforePrice').value = '';
+    document.getElementById('beforeOccupancy').value = '';
+    document.getElementById('beforeRevenue').value = '';
+    document.getElementById('renovationBudget').value = '';
+    document.getElementById('equipmentRatio').value = '75';
+    document.getElementById('targetPrice').value = '';
+    document.getElementById('targetOccupancy').value = '85';
+    document.getElementById('gpuLevel').value = '';
+    
+    // 隐藏评估结果
+    const resultsDiv = document.getElementById('evaluationResults');
+    if (resultsDiv) {
+        resultsDiv.style.display = 'none';
+    }
+    
+    // 滚动到表单顶部
+    document.getElementById('project-evaluation').scrollIntoView({ behavior: 'smooth' });
+}
