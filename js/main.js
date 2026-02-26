@@ -1638,9 +1638,9 @@ function resetEvaluationForm() {
     document.getElementById('beforeOccupancy').value = '';
     document.getElementById('beforeRevenue').value = '';
     document.getElementById('renovationBudget').value = '';
-    document.getElementById('equipmentRatio').value = '75';
+    document.getElementById('equipmentRatio').value = '';
     document.getElementById('targetPrice').value = '';
-    document.getElementById('targetOccupancy').value = '85';
+    document.getElementById('targetOccupancy').value = '';
     document.getElementById('gpuLevel').value = '';
     
     // 隐藏评估结果
