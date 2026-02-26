@@ -1265,11 +1265,11 @@ const locationRatings = {
     scenic: { name: "景区周边", score: 22, priceMultiplier: 1.4, occupancyBonus: 30 }
 };
 
-// 显卡配置评级
+// 改造方案定位评级
 const gpuRatings = {
-    high: { name: "RTX5070及以上", score: 20, priceBonus: 50 },
-    mid: { name: "RTX5060Ti/5070", score: 18, priceBonus: 35 },
-    entry: { name: "RTX5060", score: 15, priceBonus: 20 }
+    high: { name: "旗舰版（RTX5070+ | 单房3.5万+）", score: 20, budgetMin: 35000, budgetMax: 50000 },
+    mid: { name: "标准版（RTX5060Ti/5070 | 单房2.5-3.5万）", score: 18, budgetMin: 25000, budgetMax: 35000 },
+    entry: { name: "经济版（RTX5060 | 单房2-2.5万）", score: 15, budgetMin: 20000, budgetMax: 25000 }
 };
 
 // 初始化评估系统
@@ -1388,15 +1388,18 @@ function calculateEvaluation(data) {
     
     result.details.equipmentRating = gpuInfo.name;
     
-    // 预算合理性检查
+    // 预算合理性检查 - 根据方案定位判断
     const budgetPerRoom = data.budget * 10000 / data.renovationRooms;
-    if (budgetPerRoom >= 25000 && budgetPerRoom <= 35000) {
-        result.details.budgetRating = "合理（2.5-3.5万/间）";
-    } else if (budgetPerRoom < 25000) {
-        result.details.budgetRating = "偏低（<2.5万/间）";
-        riskScore -= 2;
+    const minBudget = gpuInfo.budgetMin;
+    const maxBudget = gpuInfo.budgetMax;
+    
+    if (budgetPerRoom >= minBudget && budgetPerRoom <= maxBudget) {
+        result.details.budgetRating = `合理（${(minBudget/10000).toFixed(1)}-${(maxBudget/10000).toFixed(1)}万/间）`;
+    } else if (budgetPerRoom < minBudget) {
+        result.details.budgetRating = `偏低（<${(minBudget/10000).toFixed(1)}万/间）`;
+        riskScore -= 3;
     } else {
-        result.details.budgetRating = "偏高（>3.5万/间）";
+        result.details.budgetRating = `偏高（>${(maxBudget/10000).toFixed(1)}万/间）`;
         riskScore -= 1;
     }
     
@@ -1527,7 +1530,7 @@ function generateInvestmentAdvice(evaluation, formData) {
         strengths.push(`回本速度快：预计${evaluation.details.paybackPeriod}个月即可回本，资金周转效率高`);
     }
     if (evaluation.risk >= 18) {
-        strengths.push(`风险可控：设备配置${evaluation.details.equipmentRating}，预算分配合理，${evaluation.details.riskLevel}`);
+        strengths.push(`风险可控：方案定位${evaluation.details.equipmentRating}，预算分配合理，${evaluation.details.riskLevel}`);
     }
     
     adviceStrengths.innerHTML = strengths.map(s => `<li>${s}</li>`).join('');
@@ -1544,7 +1547,7 @@ function generateInvestmentAdvice(evaluation, formData) {
         risks.push(`回本周期较长（${evaluation.details.paybackPeriod}个月），对现金流要求较高，需确保资金充裕`);
     }
     if (evaluation.risk < 15) {
-        risks.push(`${evaluation.details.riskLevel}，设备配置或预算分配可能存在问题，建议重新评估改造方案`);
+        risks.push(`${evaluation.details.riskLevel}，方案定位或预算分配可能存在问题，建议重新评估改造方案`);
     }
     if (formData.renovationRooms / formData.totalRooms < 0.5) {
         risks.push(`改造房间占比偏低（${(formData.renovationRooms / formData.totalRooms * 100).toFixed(0)}%），可能影响品牌效应和整体收益`);
@@ -1570,7 +1573,7 @@ function generateInvestmentAdvice(evaluation, formData) {
     if (formData.renovationRooms < 20) {
         optimizations.push(`建议增加改造房间数至20间以上，以实现规模效应和品牌影响力`);
     }
-    optimizations.push('建议选择RTX5060Ti及以上显卡配置，确保3-5年内不落后');
+    optimizations.push('建议选择标准版或旗舰版方案，配置RTX5060Ti及以上显卡，确保3-5年内不落后');
     optimizations.push('建议与滴灌通深度合作，享受品牌、运营、采购等全方位赋能');
     
     adviceOptimization.innerHTML = optimizations.map(o => `<li>${o}</li>`).join('');
