@@ -82,6 +82,8 @@
                 <a href="#esports" class="nav-item">电竞产业</a>
                 <a href="#financial" class="nav-item">财务模型</a>
                 <a href="#investment-model" class="nav-item">投资模型</a>
+                <a href="#internal-proposal" class="nav-item">内部投资方案</a>
+                <a href="#project-filter" class="nav-item">储备项目筛选</a>
             </div>
         </div>
     </nav>
@@ -842,6 +844,229 @@
                 </div> -->
             </div>
 
+        </div>
+    </section>
+
+    <!-- 内部投资方案 -->
+    <section id="internal-proposal" class="section section-dark" aria-label="内部投资方案">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label">INTERNAL INVESTMENT PROPOSAL</span>
+                <h2 class="section-title">内部投资方案评估系统</h2>
+                <p class="section-desc">智能评估多个投资方案，基于ROI、回本周期、风险等级进行综合决策</p>
+            </div>
+
+            <!-- 方案输入区 -->
+            <div class="proposal-input-section">
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label class="input-label">方案名称</label>
+                        <input type="text" id="proposalName" class="input-field" placeholder="例如：XX城市电竞酒店" />
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">总投资额（万元）</label>
+                        <input type="number" id="proposalInvestment" class="input-field" placeholder="50.67" step="0.01" />
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">预计年收益（万元）</label>
+                        <input type="number" id="proposalAnnualReturn" class="input-field" placeholder="40.36" step="0.01" />
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">风险等级</label>
+                        <select id="proposalRisk" class="input-field">
+                            <option value="low">低风险</option>
+                            <option value="medium" selected>中风险</option>
+                            <option value="high">高风险</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">城市等级</label>
+                        <select id="proposalCityTier" class="input-field">
+                            <option value="1">一线城市</option>
+                            <option value="2" selected>二线城市</option>
+                            <option value="3">三线城市</option>
+                            <option value="4">四线及以下</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">市场成熟度</label>
+                        <select id="proposalMaturity" class="input-field">
+                            <option value="emerging">新兴市场</option>
+                            <option value="growing" selected>成长市场</option>
+                            <option value="mature">成熟市场</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="addProposal" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px;">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        添加方案
+                    </button>
+                    <button id="clearProposals" class="btn btn-secondary">清空所有方案</button>
+                </div>
+            </div>
+
+            <!-- 方案对比展示 -->
+            <div id="proposalsList" class="proposals-grid">
+                <!-- 动态生成的方案卡片将显示在这里 -->
+            </div>
+
+            <!-- 排序和筛选 -->
+            <div class="filter-section">
+                <div class="filter-controls">
+                    <label class="filter-label">排序方式：</label>
+                    <select id="proposalSortBy" class="filter-select">
+                        <option value="roi">按ROI降序</option>
+                        <option value="payback">按回本周期升序</option>
+                        <option value="investment">按投资额升序</option>
+                        <option value="score">按综合评分降序</option>
+                    </select>
+                </div>
+                <div class="filter-controls">
+                    <label class="filter-label">风险筛选：</label>
+                    <select id="proposalFilterRisk" class="filter-select">
+                        <option value="all">全部</option>
+                        <option value="low">仅低风险</option>
+                        <option value="medium">仅中风险</option>
+                        <option value="high">仅高风险</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 对比图表 -->
+            <div class="chart-container" style="margin-top: 3rem;">
+                <canvas id="proposalComparisonChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- 储备项目筛选器 -->
+    <section id="project-filter" class="section" aria-label="储备项目筛选器">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label">PROJECT RESERVE FILTER</span>
+                <h2 class="section-title">储备项目智能筛选系统</h2>
+                <p class="section-desc">多维度筛选储备项目，快速找到最匹配的投资机会</p>
+            </div>
+
+            <!-- 筛选条件 -->
+            <div class="filter-panel">
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label class="filter-label">投资额范围（万元）</label>
+                        <div class="range-inputs">
+                            <input type="number" id="filterInvestMin" class="input-field" placeholder="最小值" value="0" />
+                            <span style="margin: 0 10px;">-</span>
+                            <input type="number" id="filterInvestMax" class="input-field" placeholder="最大值" value="100" />
+                        </div>
+                    </div>
+                    <div class="filter-item">
+                        <label class="filter-label">预期ROI（%）</label>
+                        <div class="range-inputs">
+                            <input type="number" id="filterROIMin" class="input-field" placeholder="最小%" value="50" />
+                            <span style="margin: 0 10px;">-</span>
+                            <input type="number" id="filterROIMax" class="input-field" placeholder="最大%" value="200" />
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label class="filter-label">回本周期（月）</label>
+                        <div class="range-inputs">
+                            <input type="number" id="filterPaybackMin" class="input-field" placeholder="最短" value="0" />
+                            <span style="margin: 0 10px;">-</span>
+                            <input type="number" id="filterPaybackMax" class="input-field" placeholder="最长" value="24" />
+                        </div>
+                    </div>
+                    <div class="filter-item">
+                        <label class="filter-label">城市等级</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterCity1" checked /> 一线
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterCity2" checked /> 二线
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterCity3" checked /> 三线
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterCity4" checked /> 四线及以下
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label class="filter-label">风险偏好</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterRiskLow" checked /> 低风险
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterRiskMedium" checked /> 中风险
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterRiskHigh" checked /> 高风险
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-item">
+                        <label class="filter-label">项目状态</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterStatusProposed" checked /> 提案中
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterStatusEvaluating" checked /> 评估中
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="filterStatusApproved" checked /> 已批准
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="applyFilter" class="btn btn-primary">应用筛选</button>
+                    <button id="resetFilter" class="btn btn-secondary">重置筛选</button>
+                    <button id="generateSampleProjects" class="btn btn-accent">生成示例数据</button>
+                </div>
+            </div>
+
+            <!-- 筛选结果 -->
+            <div class="filter-results">
+                <div class="results-header">
+                    <h3 class="results-title">筛选结果</h3>
+                    <span id="resultsCount" class="results-count">共 0 个项目</span>
+                </div>
+                <div id="projectsList" class="projects-grid">
+                    <!-- 动态生成的项目卡片将显示在这里 -->
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.3;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <p>暂无项目数据，请点击"生成示例数据"查看演示</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计图表 -->
+            <div class="stats-charts" style="margin-top: 3rem;">
+                <div class="chart-row">
+                    <div class="chart-box">
+                        <h4 class="chart-title">项目分布统计</h4>
+                        <canvas id="projectDistributionChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h4 class="chart-title">ROI vs 回本周期</h4>
+                        <canvas id="roiPaybackChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
     </main>
